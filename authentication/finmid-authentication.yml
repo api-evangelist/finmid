@@ -1,0 +1,40 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/reference/api-introduction
+docs: https://docs.finmid.com/reference/api-introduction
+summary:
+  types: [apiKey, httpMessageSignatures]
+  api_key_in: [header]
+  api_key_name: X-API-Key
+  environments: [sandbox, live]
+schemes:
+- name: ApiKeyAuth
+  type: apiKey
+  in: header
+  parameter: X-API-Key
+  description: >-
+    Primary authentication for both the B2B Payments API and the Capital API.
+    Every request must include the X-API-Key header. Keys are environment
+    specific — a sandbox key (https://sandbox.finmid.com) cannot access live
+    data and a live key (https://api.finmid.com) cannot access sandbox data.
+    Keys are managed in the finmid Dashboard.
+  applies_to: [B2B Payments API, Capital API]
+- name: HttpMessageSignatures
+  type: http-message-signatures
+  standard: RFC 9421
+  algorithm: Ed25519
+  description: >-
+    For platform-provided capital, the Execute Payment Transaction endpoint
+    (platform-initiated payouts) is additionally protected with HTTP Message
+    Signatures (RFC 9421). Requests are signed with Ed25519, include a
+    Content-Digest for body integrity, use temporal/replay-attack prevention,
+    and require IP whitelisting.
+  applies_to: [Capital API - platform-provided capital]
+webhook_auth:
+  description: >-
+    Inbound webhooks from finmid to your endpoint use HTTP Basic authentication
+    plus an HMAC-SHA-256 payload signature carried in the X-Payload-Signature
+    header (Base64-encoded), verified with a per-endpoint signature_secret.
+  source: https://docs.finmid.com/docs/webhooks
+notes:
+- OAuth 2.0 / OpenID Connect are not used — authentication is API-key based.
