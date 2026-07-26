@@ -1,0 +1,65 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/docs/webhooks
+spec_type: Webhooks
+docs:
+- https://docs.finmid.com/docs/webhooks
+- https://docs.finmid.com/docs/capital-webhooks
+transport: https
+delivery:
+  style: outbound HTTP POST from finmid to a subscriber-hosted HTTPS endpoint
+  batching: A single webhook payload may contain multiple events (events[] array).
+  retries: >-
+    On delivery error finmid retries for up to one day with exponential backoff.
+security:
+  authentication: HTTP Basic authentication (per-endpoint username/password)
+  signature:
+    header: X-Payload-Signature
+    algorithm: HMAC-SHA-256
+    encoding: Base64
+    secret: per-endpoint signature_secret
+  transport: HTTPS only; self-signed certificates not supported
+configuration:
+  endpoint_management: https://api.finmid.com/api/v2/b2b-payments/webhook-endpoints
+  methods:
+  - Via customer support (support@finmid.com)
+  - Via API (POST webhook-endpoints, requires X-API-Key)
+payload_shape:
+  envelope_fields: [webhook_id, timestamp, events]
+  event_fields: [event_id, timestamp, type, data]
+events:
+  b2b_payments:
+  - type: buyer.status_changed
+    description: Buyer status changed (PENDING/ACTIVE/INACTIVE/REJECTED/SUSPENDED).
+  - type: seller.status_changed
+    description: Seller status changed (PENDING/ACTIVE/INACTIVE/REJECTED/SUSPENDED).
+  - type: payment_request.repayment.repaid
+    description: Payment request fully repaid by the buyer; may be considered CLOSED.
+  - type: payment_request.repayment.reminder
+    description: Payment request near or past its repayment deadline.
+  capital:
+  - type: capital_funding.created
+  - type: capital_funding.paid
+  - type: capital_funding.paid_out
+  - type: capital_funding.cancelled
+  - type: capital_funding.rejected
+  - type: capital_funding.defaulted
+  - type: capital_funding.novated
+  - type: capital_funding.refinanced
+  - type: capital_funding.restored
+  - type: capital_funding.collection_enabled
+  - type: capital_funding.collection_suspended
+  - type: capital_funding.collection_updated
+  - type: capital_offer.created
+  - type: capital_offer.opened
+  - type: capital_offer.accepted
+  - type: capital_offer.expired
+  - type: payment.created
+  - type: payment.scheduled
+  - type: payment.completed
+  - type: payment.cancelled
+  - type: payment.failed
+  - type: kyb_data_consent.granted
+notes:
+- No published AsyncAPI document was found; this is a derived catalog of the
+  documented webhook event surface (type Webhooks).

@@ -1,0 +1,44 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/reference/api-introduction
+docs: https://docs.finmid.com/reference/api-introduction
+environments:
+- name: sandbox
+  base_url: https://sandbox.finmid.com
+  auth: X-API-Key (sandbox key)
+  description: >-
+    Isolated test environment. Sandbox keys cannot access live data. Keys are
+    issued and managed from the finmid Dashboard.
+- name: live
+  base_url: https://api.finmid.com
+  auth: X-API-Key (live key)
+key_separation:
+  mechanism: environment-scoped API keys
+  note: A sandbox key cannot access live data and vice versa.
+simulation_endpoints:
+  description: >-
+    finmid publishes dedicated sandbox-only simulation endpoints so integrators
+    can drive state transitions and receive the corresponding webhooks without
+    real money movement. These endpoints are only available in the sandbox
+    environment.
+  b2b_payments:
+  - Simulate Buyer (sandbox only) — drive buyer status changes / activation
+  - Simulate Repayment (sandbox only) — drive payment-request repayment
+  capital:
+  - Simulate Funding creation
+  - Simulate Funding payout
+  - Simulate Funding rejection
+  - Simulate Sales-statements batch payment (finmid-funded integrations)
+  - Simulate Offer creation
+  - Simulate Offer acceptance
+  - Simulate Offer expiration
+  - Simulate Payment scheduling
+  - Simulate Payment completion
+  - Simulate Payment failure
+testable_webhooks:
+  note: >-
+    Webhooks for buyer/seller status change and payment-request repayment can
+    be triggered via the simulation endpoints above.
+notes:
+- No published static test card numbers or magic identifiers were found; the
+  sandbox is driven through the simulation endpoints rather than fixture values.

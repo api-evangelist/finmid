@@ -1,0 +1,22 @@
+generated: '2026-07-19'
+method: probed
+note: >-
+  Probed the /.well-known/ discovery surface on finmid hosts. The API hosts
+  return 403 (WAF) for well-known paths; the marketing host returns 200 for
+  /.well-known/security.txt but serves the Astro homepage HTML (soft-404), so
+  there is no valid RFC 9116 security.txt. No well-known discovery document was
+  found — no WellKnown/SecurityTxt pointer emitted.
+hosts:
+- host: https://api.finmid.com
+  documents:
+  - {path: /.well-known/security.txt, status: 403}
+  - {path: /.well-known/openid-configuration, status: 403}
+  - {path: /.well-known/oauth-authorization-server, status: 403}
+  - {path: /.well-known/api-catalog, status: 403}
+  - {path: /.well-known/ai-plugin.json, status: 403}
+- host: https://sandbox.finmid.com
+  documents:
+  - {path: /.well-known/security.txt, status: 403}
+- host: https://www.finmid.com
+  documents:
+  - {path: /.well-known/security.txt, status: 200, valid: false, note: returns homepage HTML (soft-404), not RFC 9116}

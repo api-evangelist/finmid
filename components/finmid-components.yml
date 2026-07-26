@@ -1,0 +1,21 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/docs/capital-iframe
+docs:
+- https://docs.finmid.com/docs/capital-iframe
+- https://docs.finmid.com/docs/capital-offer-sharing-and-acceptance
+components:
+- family: Capital Widget
+  kind: embeddable iframe widget
+  description: >-
+    A hosted, embeddable iframe widget for the Capital API that lets a platform
+    surface pre-approved financing Offers to a Business inside the platform's
+    own UI and capture Offer acceptance. Supports domain delegation so the
+    widget can be served under the platform's own domain.
+  integration: iframe embed
+  domain_delegation:
+    supported: true
+    docs: https://docs.finmid.com/docs/domain-delegation
+    registrars_documented: [GoDaddy, Amazon Route 53]
+notes:
+- Distinct from server-side SDKs (none published); this is a client-embeddable UI surface.

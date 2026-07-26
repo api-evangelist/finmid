@@ -1,0 +1,61 @@
+generated: '2026-07-19'
+method: derived
+status: candidate
+source: https://docs.finmid.com/llms.txt
+note: >-
+  No official hosted/remote finmid MCP server was found. This is a CANDIDATE
+  tool list derived from finmid's documented API reference operations (from
+  docs.finmid.com/llms.txt) as a starting point for an MCP server.
+server:
+  name: finmid
+  transport: http
+  url: null
+tools:
+- name: create_buyer
+  description: Create/onboard a buyer.
+  source_operation: https://docs.finmid.com/reference/create-buyer-v2
+- name: get_buyer
+  description: Get a buyer's details.
+  source_operation: https://docs.finmid.com/reference/get-buyer-v2
+- name: update_buyer
+  description: Update a buyer.
+  source_operation: https://docs.finmid.com/reference/update-buyer-v2
+- name: get_buyer_limit
+  description: Get estimated buyer credit limit in a target currency.
+  source_operation: https://docs.finmid.com/reference/get-buyer-limit-v2
+- name: create_seller
+  description: Create/onboard a seller.
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: get_seller
+  description: Get a seller's details.
+  source_operation: https://docs.finmid.com/reference/get-seller-v2
+- name: update_seller
+  description: Update a seller.
+  source_operation: https://docs.finmid.com/reference/update-seller-v2
+- name: update_seller_bank_account
+  description: Update a seller's bank account details.
+  source_operation: https://docs.finmid.com/reference/update-seller-bank-account-v2
+- name: create_payment_request
+  description: Create a payment request financed by a finmid loan.
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: get_payment_request
+  description: Get a payment request's details.
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: cancel_payment_request
+  description: Cancel a payment request.
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: create_payout
+  description: Create a payout (PERCENTAGE, AMOUNT, or MAX).
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: get_funding_applications
+  description: Get Capital funding applications with status.
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: get_active_offer_group
+  description: Get the active Capital Offer group for a business.
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: create_business
+  description: Create a Capital business (non-PI data).
+  source_operation: https://docs.finmid.com/reference/api-introduction
+- name: submit_kyb_data
+  description: Submit KYB (Know Your Business) data.
+  source_operation: https://docs.finmid.com/reference/api-introduction

@@ -1,0 +1,20 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/reference/api-introduction
+versioning:
+  scheme: uri-path + resource-suffixed operation ids
+  observed_versions: [v2.0, v2.1, v2.3]
+  current: v2.3
+  docs: https://docs.finmid.com/reference/api-introduction
+deprecation:
+  policy_url: null
+  sunset_header: null
+  note: No formal deprecation policy or RFC 8594 Sunset/Deprecation header support was found.
+sla:
+  url: null
+  uptime_target: null
+status_page: https://finmid.statuspage.io
+status_page_provider: Atlassian Statuspage
+notes:
+- Status page confirmed live (All Systems Operational) at finmid.statuspage.io.
+- No published deprecation policy — no Deprecation pointer emitted.

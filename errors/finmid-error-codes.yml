@@ -1,0 +1,49 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/docs/b2b-payments-errors
+docs: https://docs.finmid.com/docs/b2b-payments-errors
+format: custom
+envelope:
+  description: >-
+    Errors are returned as JSON with two fields. finmid uses conventional HTTP
+    status codes: 2XX success, 4XX client error, 5XX server error. This is NOT
+    RFC 9457 problem+json.
+  fields:
+  - name: code
+    description: Machine-readable error type identifier.
+  - name: description
+    description: Human-readable explanation of the error.
+scope: B2B Payments API
+error_codes:
+- code: buyer_invalid
+  description: Buyer was either not found in the system or is not activated.
+- code: seller_invalid
+  description: Seller was either not found in the system or is not activated.
+- code: platform_invalid
+  description: The platform was either not found in the system or is not activated.
+- code: payment_request_invalid
+  description: >-
+    The payment request id provided was not found in the system, or the payment
+    request is in an invalid state for the intended request.
+- code: line_item_invalid
+  description: >-
+    The line item id provided was not found in the system for the specified
+    payment request.
+- code: buyer_conflict
+  description: >-
+    Buyer with provided id already created and exists in the system. A different
+    id must be provided.
+- code: seller_conflict
+  description: >-
+    Seller with provided id already created and exists in the system. A
+    different id must be provided.
+- code: payment_request_conflict
+  description: >-
+    Payment request with provided id already created and exists in the system. A
+    different id must be provided.
+- code: validation_error
+  description: >-
+    One or more input parameters in the request payload have invalid values.
+    Additional details provided in the error response description.
+- code: server_error
+  description: Error processing request due to a finmid internal error.

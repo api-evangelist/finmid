@@ -1,0 +1,78 @@
+generated: '2026-07-19'
+method: derived
+source: >-
+  https://docs.finmid.com/docs/b2b-payments-core-concepts,
+  https://docs.finmid.com/docs/capital-core-concepts,
+  https://docs.finmid.com/llms.txt
+note: >-
+  Derived from finmid's documented core concepts and API reference (no OpenAPI
+  published). Entities and relationships reflect the documented object model.
+domains:
+- name: B2B Payments
+  entities:
+  - name: Platform
+    description: finmid's direct customer that connects buyers and sellers; not creatable via public API.
+  - name: Buyer
+    description: Entity purchasing products/services on the platform; subject to a creditworthiness check.
+    id: caller-assigned
+  - name: Seller
+    description: Entity listing products/services for sale; receives disbursement on payment.
+    id: caller-assigned
+  - name: PaymentRequest
+    description: A payment processed via a finmid loan, encapsulating buyer, seller and line items.
+    id: caller-assigned
+    contains: [LineItem]
+  - name: LineItem
+    description: An item within a payment request.
+  - name: Payout
+    description: Disbursement to a seller (PERCENTAGE, AMOUNT, or MAX).
+- name: Capital
+  entities:
+  - name: Business
+    description: The financed business (Capital equivalent of a buyer); onboarded with KYB data.
+  - name: Offer
+    description: A pre-approved, customizable financing offer; belongs to an OfferGroup.
+  - name: OfferGroup
+    description: A group of active offer options presented to a business.
+    contains: [Offer]
+  - name: Funding
+    description: An accepted, funded capital facility for a business.
+  - name: Payment
+    description: A business payment against a funding (percentage-of-sales or direct debit).
+  - name: SalesStatement
+    description: Reported sales used to compute business payments; grouped in batches.
+relationships:
+- from: PaymentRequest
+  to: Buyer
+  type: belongs_to
+  via: buyer_id
+- from: PaymentRequest
+  to: Seller
+  type: belongs_to
+  via: seller_id
+- from: PaymentRequest
+  to: LineItem
+  type: has_many
+  via: line_items
+- from: Payout
+  to: Seller
+  type: belongs_to
+  via: seller_id
+- from: Offer
+  to: OfferGroup
+  type: belongs_to
+- from: OfferGroup
+  to: Business
+  type: belongs_to
+- from: Funding
+  to: Business
+  type: belongs_to
+- from: Funding
+  to: Offer
+  type: belongs_to
+- from: Payment
+  to: Funding
+  type: belongs_to
+- from: SalesStatement
+  to: Business
+  type: belongs_to

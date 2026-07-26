@@ -1,0 +1,50 @@
+generated: '2026-07-19'
+method: searched
+source: https://docs.finmid.com/reference/api-introduction
+docs: https://docs.finmid.com/reference/api-introduction
+authentication:
+  style: API key in header
+  header: X-API-Key
+  environments: [sandbox, live]
+  additional: RFC 9421 HTTP Message Signatures (Ed25519) for platform-provided capital payouts
+  see: authentication/finmid-authentication.yml
+architecture:
+  style: REST
+  urls: resource-oriented
+  media_type: application/json
+  http_verbs: standard (GET/POST/PUT/PATCH/DELETE)
+  base_paths:
+  - /api/v2/b2b-payments/*
+  live_base_url: https://api.finmid.com
+  sandbox_base_url: https://sandbox.finmid.com
+versioning:
+  scheme: uri-path + resource-suffixed
+  observed_versions: [v2.0, v2.1, v2.3]
+  note: >-
+    Operations are versioned in the reference (e.g. create-buyer-v2). Base path
+    carries /api/v2/. See lifecycle/finmid-lifecycle.yml.
+errors:
+  envelope: {fields: [code, description]}
+  status_codes: conventional 2XX/4XX/5XX
+  problem_json: false
+  see: errors/finmid-error-codes.yml
+webhooks:
+  signing: HMAC-SHA-256 in X-Payload-Signature (Base64)
+  auth: HTTP Basic
+  batching: events[] array per delivery
+  see: asyncapi/finmid-webhooks.yml
+idempotency:
+  documented: false
+  note: >-
+    No dedicated idempotency-key header is documented. finmid instead uses
+    caller-assigned resource ids (buyer id, seller id, payment_request id) that
+    return *_conflict errors on re-use, giving a create-once contract.
+pagination:
+  documented: false
+  note: List endpoints (List Buyers, List Sellers) exist with filtering; the
+    exact pagination parameters are not published in the introduction.
+rate_limiting:
+  documented: false
+notes:
+- Idempotency is not emitted as a canonical pointer because no idempotency-key
+  contract is documented; conflict-on-duplicate-id is the closest guarantee.

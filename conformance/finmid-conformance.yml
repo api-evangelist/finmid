@@ -1,0 +1,29 @@
+generated: '2026-07-19'
+method: derived
+source: >-
+  https://docs.finmid.com/reference/api-introduction,
+  https://docs.finmid.com/docs/webhooks
+standards:
+- id: rest-json
+  conforms: true
+  evidence: Resource-oriented URLs, JSON request/response, standard HTTP verbs and status codes.
+- id: rfc9421-http-message-signatures
+  conforms: true
+  evidence: Platform-provided capital payout execution uses HTTP Message Signatures (RFC 9421) with Ed25519 and Content-Digest.
+- id: hmac-webhook-signing
+  conforms: true
+  evidence: Webhook payloads signed with HMAC-SHA-256 in X-Payload-Signature header.
+- id: rfc9457-problem-details
+  conforms: false
+  evidence: Errors use a custom {code, description} envelope, not application/problem+json.
+- id: oauth2
+  conforms: false
+  evidence: Authentication is API-key based (X-API-Key); no OAuth 2.0 flows.
+- id: openid-connect
+  conforms: false
+- id: asyncapi
+  conforms: false
+  evidence: Webhooks documented but no published AsyncAPI document.
+notes:
+- No published third-party compliance certifications (SOC 2, ISO 27001, PCI DSS)
+  were found on the public site; no Compliance pointer emitted.
