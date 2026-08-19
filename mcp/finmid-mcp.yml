@@ -2,10 +2,9 @@ generated: '2026-07-19'
 method: derived
 status: candidate
 source: https://docs.finmid.com/llms.txt
-note: >-
-  No official hosted/remote finmid MCP server was found. This is a CANDIDATE
-  tool list derived from finmid's documented API reference operations (from
-  docs.finmid.com/llms.txt) as a starting point for an MCP server.
+note: No official hosted/remote finmid MCP server was found. This is a CANDIDATE tool list derived from
+  finmid's documented API reference operations (from docs.finmid.com/llms.txt) as a starting point for
+  an MCP server.
 server:
   name: finmid
   transport: http
@@ -59,3 +58,9 @@ tools:
 - name: submit_kyb_data
   description: Submit KYB (Know Your Business) data.
   source_operation: https://docs.finmid.com/reference/api-introduction
+deployment:
+  mode: none
+  verified: derived
+  tools: 16
+  checked: '2026-08-12'
+  source: catalog MCP census
