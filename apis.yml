@@ -59,6 +59,17 @@ tags:
 - Capital
 - Financing
 - Payments
+- Marketplace
+tags_raw:
+- Company
+- Embedded Finance
+- Embedded Lending
+- B2B Payments
+- Fintech
+- Lending
+- Capital
+- Financing
+- Payments
 - Marketplaces
 apis:
 - name: finmid B2B Payments API
