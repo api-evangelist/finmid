@@ -1,0 +1,117 @@
+generated: '2026-10-14'
+method: derived
+generator: derive-vocabulary.py
+source:
+- openapi/finmid-b2b-payments-api-openapi.yml
+- openapi/finmid-capital-api-openapi.yml
+vocabulary:
+  name: Finmid Domain Vocabulary
+  description: 'Terms declared by Finmid''s own API contract: its resource groups, objects and enumerations, with the contract''s definitions.
+    Derived, not authored.'
+  version: '2026-10-14'
+  terms:
+  - term: Funding Application
+    definition: Endpoints for managing Funding Applications.
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Capital Max
+    definition: Endpoints for managing Capital Max applications.
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Buyer
+    definition: 'Resource group in the contract; its operation POST /api/v2/b2b-payments/buyers: Let''s create/onboard a new buyer.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-b2b-payments-api-openapi.yml
+  - term: Payment Request
+    definition: 'Resource group in the contract; its operation POST /api/v2/b2b-payments/payment-requests: The create payment request resource
+      endpoint creates a loan and reserves the specified order amount.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-b2b-payments-api-openapi.yml
+  - term: Tasks
+    definition: 'Resource group in the contract; its operation POST /api/v2/b2b-payments/payment-requests/documents: Upload a list of documents
+      for a task with entity type: `PAYMENT_REQUEST_TASK` the documents will then be used for the approval of payment request payouts during the
+      spot checks process.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-b2b-payments-api-openapi.yml
+  - term: Beta Endpoints
+    definition: 'Resource group in the contract; its operation GET /api/v2/b2b-payments/reports/settlement: Returns a list of payouts made to
+      sellers within a given date range.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-b2b-payments-api-openapi.yml
+  - term: Seller
+    definition: 'Resource group in the contract; its operation POST /api/v2/b2b-payments/sellers: Let''s create/onboard a new seller.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-b2b-payments-api-openapi.yml
+  - term: Simulation
+    definition: 'Resource group in the contract; its operation PATCH /api/v2/b2b-payments/simulation/buyer: This endpoint allows you to simulate
+      onboarding of buyers in the sandbox environment.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-b2b-payments-api-openapi.yml
+  - term: Business
+    definition: 'Resource group in the contract; its operation POST /api/v1/capital/businesses: In order to access pre-approved Offers for Businesses,
+      Platforms must first share non-PI data.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Funding
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/businesses/{business_id}/credits: The endpoint provides information
+      about the Funding of the Business.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: CSP Financial Document
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/businesses/{business_id}/documents/csp: Retrieve the latest
+      CSP financial documents for a Business.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Offer
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/businesses/{business_id}/offers/current: This endpoint is used
+      to access the status of the current Offer or Funding, as well as the embedding link for the Capital iframe.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Offer Group
+    definition: 'Resource group in the contract; its operation POST /api/v1/capital/businesses/{business_id}/offers/{offer_group_id}/platform-checks:
+      > ⚠️ This API is relevant only for platforms that provide their own capital to businesses.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Onboarding
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/businesses/{business_id}/onboardings/latest: This endpoint
+      retrieves the latest onboarding status for a business.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Document
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/credits/{credit_id}/documents: Retrieve a list of all documents
+      associated with a specific funding.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Incoming Webhook
+    definition: 'Resource group in the contract; its operation POST /api/v1/capital/incoming-webhooks: Endpoint for receiving incoming webhooks
+      with generic data payloads.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Payment
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/payment-batches/{batch_id}: Retrieve aggregated payment information
+      for a specific payment batch.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
+  - term: Sales statements
+    definition: 'Resource group in the contract; its operation GET /api/v1/capital/sales-statements/batches/{id}: Retrieve aggregated sales statement
+      information for a specific batch.'
+    tags:
+    - Resource Group
+    source: openapi/finmid-capital-api-openapi.yml
