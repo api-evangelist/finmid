@@ -1,0 +1,233 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Document API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Document
+paths:
+  /api/v1/capital/credits/{credit_id}/documents:
+    get:
+      tags:
+      - Document
+      operationId: list-funding-documents
+      summary: List Funding Documents
+      description: 'Retrieve a list of all documents associated with a specific funding.
+
+
+        Documents can include invoices, terms and conditions, and capital summaries related to the funding.'
+      parameters:
+      - name: credit_id
+        in: path
+        description: Unique identifier of the funding
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 20e9a201-9b22-4768-887b-1b7559b699c6
+      responses:
+        '200':
+          description: List of documents associated with the funding
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - type
+                      - name
+                      properties:
+                        id:
+                          type: string
+                          description: Unique identifier of the document
+                          example: dGVzdDE
+                        type:
+                          type: string
+                          description: Type of the document
+                          enum:
+                          - INVOICE
+                          - TERMS_AND_CONDITIONS
+                          - CAPITAL_SUMMARY
+                          example: INVOICE
+                        name:
+                          type: string
+                          description: Display name of the document
+                          example: Invoice.pdf
+              examples:
+                document_list:
+                  value:
+                    data:
+                    - id: dGVzdDE
+                      type: INVOICE
+                      name: Invoice.pdf
+                    - id: dGVzdDI
+                      type: TERMS_AND_CONDITIONS
+                      name: Terms_and_Conditions.pdf
+                    - id: dGVzdDM
+                      type: CAPITAL_SUMMARY
+                      name: Capital_Summary.pdf
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Funding not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - credit_not_found
+                    description:
+                      example: Credit with id '20e9a201-9b22-4768-887b-1b7559b699c6' not found
+              examples:
+                funding_not_found:
+                  value:
+                    code: credit_not_found
+                    description: Credit with id '20e9a201-9b22-4768-887b-1b7559b699c6' not found
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/documents/{document_id}/url:
+    get:
+      tags:
+      - Document
+      operationId: get-document-url
+      summary: Get Document Download URL
+      description: 'Retrieve a pre-signed URL for downloading a specific document.
+
+
+        The URL is temporary and will expire after the specified timestamp.'
+      parameters:
+      - name: document_id
+        in: path
+        description: Unique identifier of the document
+        required: true
+        schema:
+          type: string
+        example: dGVzdDE
+      responses:
+        '200':
+          description: Pre-signed URL for document download
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - url
+                - expires_at
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: Pre-signed URL for downloading the document
+                    example: https://storage.finmid.com/documents/doc-123-456?signature=...
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the URL expires (ISO 8601 datetime)
+                    example: '2024-01-01T12:00:00.000Z'
+              examples:
+                document_url:
+                  value:
+                    url: https://storage.finmid.com/documents/doc-123-456?signature=abcd1234
+                    expires_at: '2024-01-01T12:00:00.000Z'
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - document_not_found
+                    description:
+                      example: Document with id 'dGVzdDE' not found
+              examples:
+                document_not_found:
+                  value:
+                    code: document_not_found
+                    description: Document with id 'dGVzdDE' not found
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

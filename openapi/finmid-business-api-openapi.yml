@@ -1,0 +1,1234 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Business API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Business
+paths:
+  /api/v1/capital/businesses:
+    post:
+      tags:
+      - Business
+      operationId: create-business
+      summary: Create Business
+      description: In order to access pre-approved Offers for Businesses, Platforms must first share non-PI data. This data is used to generate Offers, confirm receiving bank accounts with Businesses, and support the 2FA process used to accept Offers.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - id
+              - currency
+              - legal_address
+              properties:
+                id:
+                  $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                currency:
+                  description: Three-letter currency code (ISO 4217). Supported currencies `EUR`, `DKK`, `SEK` and `POL`. Must match the Business's registered currency.
+                  type: string
+                  example: EUR
+                bank_account:
+                  type: object
+                  description: Entity for sharing business bank account details.
+                  properties:
+                    account_number_ending:
+                      description: Last N digits of the Business’s bank account number (typically the last four).
+                      type: string
+                      example: '9675'
+                legal_representative:
+                  type: object
+                  properties:
+                    phone_ending:
+                      description: Last N digits of the business’s contact phone (usually last four).
+                      type: string
+                      example: '1234'
+                legal_address:
+                  type: object
+                  description: Entity for business address details.
+                  required:
+                  - country
+                  properties:
+                    country:
+                      description: Country where the Business operates.
+                      $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1credits/get/responses/200/content/application~1json/schema/properties/data/items/properties/country/allOf/0'
+                partnership_started_date:
+                  description: Date when the Business started its partnership with the Platform.
+                  type: string
+                  format: date
+                  example: '2020-01-01'
+                founding_date:
+                  description: Date when the Business was established.
+                  type: string
+                  format: date
+                  example: '2020-01-01'
+                metadata:
+                  type: object
+                  description: 'Contains a set of flexible, custom key-value pairs. Used for sharing extra data.
+
+
+                    Notable key: `mcc` — the Business''s Merchant Category Code(s) (ISO 18245, 4 digits each).
+
+                    Accepted formats: a comma-separated string (`"5411,5812"`) or an array of strings
+
+                    (`["5411", "5812"]`). Always send codes as strings to preserve leading zeros (e.g. `"0742"`).
+
+                    If at least one provided code is not eligible for financing, the request is rejected with
+
+                    `mcc_not_eligible`. The value is stored and returned as a comma-separated string.
+
+                    '
+                  additionalProperties: true
+                  example:
+                    mcc: 5411,5812
+                    key: value
+            examples:
+              create_business:
+                value:
+                  id: business-id
+                  currency: EUR
+                  bank_account:
+                    account_number_ending: '1234'
+                  legal_representative:
+                    phone_ending: '4321'
+                  legal_address:
+                    country: DEU
+                  partnership_started_date: '2023-01-01'
+                  founding_date: '2023-01-01'
+                  metadata:
+                    mcc: 5411,5812
+                    mcc_translation: Grocery stores
+                    employee_of_the_month: John Doe
+        required: true
+      responses:
+        '201':
+          description: Business created.
+          content:
+            application/json:
+              schema:
+                description: Business response object
+                type: object
+                required:
+                - id
+                - currency
+                - bank_account
+                - legal_address
+                properties:
+                  id:
+                    description: Identifier of the business.
+                    type: string
+                    example: business-id
+                  legal_name:
+                    description: Legal name of the business.
+                    type: string
+                    example: Business GmbH
+                  business_registration_number:
+                    description: Business registration number.
+                    type: string
+                    example: DE123456789
+                  tax_number:
+                    description: Tax number.
+                    type: string
+                    example: DE987654321
+                  bank_account:
+                    description: Entity for sharing business bank account details.
+                    type: object
+                    properties:
+                      account_number:
+                        description: Full IBAN or local BBAN of the Business’s bank account.
+                        type: string
+                        example: DE53500105174515729675
+                      bic:
+                        description: BIC (Bank Identifier Code) of the Business’s bank account.
+                        type: string
+                        example: INGDDEFFXXX
+                      account_holder_name:
+                        description: Name of the bank account holder. The Business’s legal name will be used for payout if this value is missing.
+                        type: string
+                        example: John Doe
+                      account_number_ending:
+                        description: Last N digits of the Business’s bank account number (typically the last four).
+                        type: string
+                        example: '9675'
+                  currency:
+                    $ref: '#/paths/~1api~1v1~1capital~1businesses/post/requestBody/content/application~1json/schema/properties/currency'
+                  legal_representative:
+                    type: object
+                    properties:
+                      first_name:
+                        description: First name of the business’s legal representative.
+                        type: string
+                        example: John
+                      last_name:
+                        description: Last name of the business’s legal representative.
+                        type: string
+                        example: Doe
+                      phone:
+                        description: Phone number of the business’s legal representative.
+                        type: string
+                        example: '+4917612345678'
+                      email:
+                        description: Email address of the business’s legal representative.
+                        type: string
+                        example: john@doe.mail
+                      phone_ending:
+                        description: Last N digits of the business’s contact phone (usually last four).
+                        type: string
+                        example: '1234'
+                  legal_address:
+                    type: object
+                    description: Entity for business address details.
+                    required:
+                    - country
+                    properties:
+                      address_line_1:
+                        description: First line of the Business address.
+                        type: string
+                        example: Musterstraße 12
+                      address_line_2:
+                        description: Second line of the Business address for any required additions to the first line.
+                        type: string
+                        example: c/o Business GmbH
+                      postal_code:
+                        description: Postal code of the Business address.
+                        type: string
+                        example: '12345'
+                      city:
+                        description: City where the Business is located.
+                        type: string
+                        example: Musterstadt
+                      state:
+                        description: State where the Business is located.
+                        type: string
+                        example: Musterstadt
+                      country:
+                        $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1credits/get/responses/200/content/application~1json/schema/properties/data/items/properties/country/allOf/0'
+                  partnership_started_date:
+                    description: Date when the partnership started (ISO 8601 date).
+                    type: string
+                    format: date
+                    example: '2020-01-01'
+                  founding_date:
+                    description: Date when the business was founded (ISO 8601 date).
+                    type: string
+                    format: date
+                    example: '2020-01-01'
+                  metadata:
+                    type: object
+                    description: Contains a set of flexible custom key-value pairs. Used for sharing extra data.
+                    additionalProperties: true
+                    example:
+                      key: value
+              examples:
+                business_created:
+                  value:
+                    id: business-id
+                    legal_name: null
+                    business_registration_number: null
+                    tax_number: null
+                    bank_account:
+                      account_number: null
+                      bic: null
+                      account_holder_name: null
+                      account_number_ending: '1234'
+                    currency: EUR
+                    legal_representative:
+                      first_name: null
+                      last_name: null
+                      phone: null
+                      email: null
+                      phone_ending: '4321'
+                    legal_address:
+                      address_line1: null
+                      address_line2: null
+                      postal_code: null
+                      city: null
+                      state: null
+                      country: DEU
+                    partnership_started_date: '2023-01-01'
+                    founding_date: '2023-01-01'
+                    metadata:
+                      mcc: 5411,5812
+                      mcc_translation: Grocery stores
+                      employee_of_the_month: John Doe
+        '400':
+          description: Can't process request due to validation reasons, or at least one of the Business's merchant category codes (MCC) is not eligible for financing.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                      - mcc_not_eligible
+                    description:
+                      example: Some fields of the request don't match requirements.
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Some fields of the request don't match requirements.
+                mcc_not_eligible:
+                  value:
+                    code: mcc_not_eligible
+                    description: Financing is not available for businesses in these merchant categories (MCC '9999,8888').
+        '401':
+          description: Missing or invalid API key. Could not authenticate API request.
+        '409':
+          description: Business exists already.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - business_conflict
+                    description:
+                      example: Business with id 'business-id' already exists
+              examples:
+                business_conflict:
+                  value:
+                    code: business_conflict
+                    description: Business with id 'business-id' already exists
+        '500':
+          description: An unexpected server error occurred. You should try again later or contact finmid support.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - properties:
+                    code:
+                      type: string
+                      enum:
+                      - server_error
+                    description:
+                      example: Our server was hit by a meteorite 💥.
+              examples:
+                server_error:
+                  value:
+                    code: server_error
+                    description: Internal processing error
+  /api/v1/capital/businesses/{business_id}:
+    get:
+      tags:
+      - Business
+      operationId: get-business
+      summary: Get Business
+      description: This endpoint allows Platforms to detect what data has been shared up to the current time for any specific Business.
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        description: Identifier of the Business.
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: business-id
+      responses:
+        '200':
+          description: Business.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/201/content/application~1json/schema'
+              examples:
+                business:
+                  value:
+                    id: business-id
+                    legal_name: Business GmbH
+                    business_registration_number: DE123456789
+                    tax_number: DE987654321
+                    bank_account:
+                      account_number: DE53500105174515729675
+                      bic: INGDDEFFXXX
+                      account_holder_name: John Doe
+                      account_number_ending: '9675'
+                    currency: EUR
+                    legal_representative:
+                      first_name: John
+                      last_name: Doe
+                      phone: '+4917612345678'
+                      email: john@doe.mail
+                      phone_ending: '5678'
+                    legal_address:
+                      address_line1: Musterstraße 12
+                      address_line2: c/o Business GmbH
+                      postal_code: '12345'
+                      city: Musterstadt
+                      state: null
+                      country: DEU
+                    partnership_started_date: '2023-01-01'
+                    founding_date: '2023-01-01'
+                    metadata:
+                      employee_of_the_month: John Doe
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Business not found.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - business_not_found
+                    description:
+                      example: Business with id 'business-id' not found
+              examples:
+                business_not_found:
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/kyb-data:
+    post:
+      tags:
+      - Business
+      operationId: add-business-kyb-data
+      summary: Submit Business's KYB data
+      description: When a Business has accepted their Offer, the Platform is authorized to share their PI data with finmid. This data is necessary for finmid's KYB checks, which are required before the payout of the Funding to the Business.
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - legal_name
+              - bank_account
+              - currency
+              - legal_representative
+              - legal_address
+              properties:
+                legal_name:
+                  description: Name of the Business.
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: Business GmbH
+                business_registration_number:
+                  description: Registration number of the Business from the commercial register.<br/><br/>⚠️ Note that one of either `business_registration_number` or `tax_number` **must** be provided.
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: DE123456789
+                tax_number:
+                  description: Identification number assigned to the Business by the local tax authority.<br/><br/>⚠️ Note that one of either `business_registration_number` or `tax_number` **must** be provided.
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: DE987654321
+                bank_account:
+                  description: Entity for sharing business bank account details.
+                  type: object
+                  required:
+                  - account_number
+                  properties:
+                    account_number:
+                      description: Full IBAN or local BBAN of the Business’s bank account.
+                      type: string
+                      minLength: 1
+                      pattern: ^([A-Z]{2}\d{2}[A-Z\d]+)|(\d{4}(-)?\d{6,10})$
+                      example: DE53500105174515729675
+                    bic:
+                      description: BIC (Bank Identifier Code) of the Business’s bank account.
+                      type: string
+                      minLength: 1
+                      pattern: ^[A-Z0-9]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$
+                      example: INGDDEFFXXX
+                    account_holder_name:
+                      description: Name of the bank account holder. The Business’s legal name will be used for payout if this value is missing.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: John Doe
+                currency:
+                  $ref: '#/paths/~1api~1v1~1capital~1businesses/post/requestBody/content/application~1json/schema/properties/currency'
+                legal_representative:
+                  type: object
+                  required:
+                  - first_name
+                  - last_name
+                  - phone
+                  - email
+                  properties:
+                    first_name:
+                      description: First name of the business’s legal representative.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: John
+                    last_name:
+                      description: Last name of the business’s legal representative.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: Doe
+                    phone:
+                      description: Phone number of the business’s legal representative. Must start with `+` followed by at least 6 digits.
+                      type: string
+                      minLength: 1
+                      pattern: ^\+\d{6,}$
+                      example: '+4917612345678'
+                    email:
+                      description: Email address of the business’s legal representative.
+                      type: string
+                      minLength: 1
+                      format: email
+                      example: john@doe.mail
+                    date_of_birth:
+                      description: Date of birth of the legal representative (ISO 8601 date).
+                      type:
+                      - string
+                      - 'null'
+                      format: date
+                      example: '1990-05-15'
+                    nationality:
+                      description: Nationality of the legal representative (ISO 3166-1 alpha-3 country code).
+                      type:
+                      - string
+                      - 'null'
+                      example: DEU
+                    documents:
+                      description: List of identity documents of the legal representative.
+                      type: array
+                      items:
+                        type: object
+                        required:
+                        - type
+                        - id
+                        properties:
+                          type:
+                            type: string
+                            description: 'Type of identity document.
+
+                              - `PASSPORT`: Passport
+
+                              - `NATIONAL_ID`: National identity card
+
+                              - `FISCAL_CODE`: Fiscal code (e.g. Italian Codice Fiscale)
+
+                              '
+                            enum:
+                            - PASSPORT
+                            - NATIONAL_ID
+                            - FISCAL_CODE
+                            example: PASSPORT
+                          id:
+                            description: The document identifier (e.g. passport number).
+                            type: string
+                            minLength: 1
+                            example: C01X00T47
+                      default: []
+                legal_address:
+                  description: Entity for business address details.
+                  type: object
+                  required:
+                  - address_line_1
+                  - postal_code
+                  - city
+                  - country
+                  properties:
+                    address_line_1:
+                      description: First line of the Business address.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: Musterstraße 12
+                    address_line_2:
+                      description: Second line of the Business address for any required additions to the first line.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: c/o Business GmbH
+                    postal_code:
+                      description: Postal code of the Business address. Alphanumeric characters, spaces and hyphens only.
+                      type: string
+                      minLength: 1
+                      maxLength: 20
+                      pattern: ^[0-9a-zA-Z -]{1,20}$
+                      example: '12345'
+                    city:
+                      description: City where the Business is located.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: Musterstadt
+                    state:
+                      description: State where the Business is located.
+                      type: string
+                      minLength: 1
+                      maxLength: 300
+                      example: Musterstadt
+                    country:
+                      description: Country where the Business operates. Must match the Business's registered country.
+                      $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1credits/get/responses/200/content/application~1json/schema/properties/data/items/properties/country/allOf/0'
+                legal_representatives:
+                  description: Additional legal representatives of the business. Each entry follows the same structure as `legal_representative`.
+                  type: array
+                  items:
+                    $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1kyb-data/post/requestBody/content/application~1json/schema/properties/legal_representative'
+                  default: []
+                legal_structure:
+                  type: string
+                  description: 'Legal structure of the business.
+
+                    - `LIMITED_LIABILITY_COMPANY`: Limited liability company (e.g. GmbH, S.r.l., Ltd)
+
+                    - `SOLE_PROPRIETOR`: Sole proprietorship
+
+                    - `GENERAL_PARTNERSHIP`: General partnership (e.g. OE, SNC, OHG)
+
+                    - `LIMITED_PARTNERSHIP`: Limited partnership (e.g. EE, KG, S.a.S.)
+
+                    - `PRIVATE_CAPITAL_COMPANY`: Private capital company (e.g. IKE)
+
+                    - `CIVIL_LAW_PARTNERSHIP`: Civil law partnership (e.g. GbR)
+
+                    - `PUBLIC_LIMITED_COMPANY`: Public limited company / joint-stock company (e.g. AE, S.p.A., AG, S.A., PLC)
+
+                    - `JOINT_VENTURE`: Joint venture
+
+                    '
+                  enum:
+                  - LIMITED_LIABILITY_COMPANY
+                  - SOLE_PROPRIETOR
+                  - GENERAL_PARTNERSHIP
+                  - LIMITED_PARTNERSHIP
+                  - PRIVATE_CAPITAL_COMPANY
+                  - CIVIL_LAW_PARTNERSHIP
+                  - PUBLIC_LIMITED_COMPANY
+                  - JOINT_VENTURE
+                  example: LIMITED_LIABILITY_COMPANY
+                metadata:
+                  type: object
+                  description: "Contains a set of flexible custom key-value pairs. Used for sharing extra data.\n\nExample:\n```json\n{\n  \"nace_code\": \"7010\", // NACE code at least 2 digits\n  \"ubos\": [ // list of UBOs\n    {\n      \"full_name\": \"John Doe\"\n    },\n    {\n      \"full_name\": \"Jane Doe\"\n    }\n  ],\n  \"legal_entity_type\": \"LIMITED_LIABILITY_COMPANY\", // LIMITED_LIABILITY_COMPANY or SOLE_PROPRIETOR\n  \"payout_schedule\": \"MONTHLY\", // MONTHLY, DAILY, etc..\n  \"mcc\": \"5411,5812\",  // MCC code(s), 4 digits each - a comma-separated string or an array of strings ([\"5411\", \"5812\"]). Always send codes as strings to preserve leading zeros (e.g. \"0742\"). Stored and returned as a comma-separated string\n  \"mcc_translation\": \"Grocery stores\", // MCC human readable translation - a single free-text value\n  \"platform_status\": \"ACTIVE\", // ACTIVE / CLOSED / PENDING / FROZEN\n  \"lei_code\": \"529900T8BM49AURSDO55\" // LEI code (Legal Entity Identifier) - 20 alphanumeric characters\n}\n```\n"
+                  additionalProperties: true
+                  example:
+                    ubos:
+                    - full_name: John Doe
+                    - full_name: Jane Doe
+                    payout_schedule: daily
+                    nace_code: '7010'
+                    legal_entity_type: LIMITED_LIABILITY_COMPANY
+                    mcc: 5411,5812
+                    mcc_translation: Grocery stores
+                    lei_code: 529900T8BM49AURSDO55
+            examples:
+              kyb_data:
+                value:
+                  legal_name: Business GmbH
+                  business_registration_number: DE123456789
+                  tax_number: DE987654321
+                  bank_account:
+                    account_number: DE53500105174515729675
+                    bic: INGDDEFFXXX
+                    account_holder_name: John Doe
+                  currency: EUR
+                  legal_representative:
+                    first_name: John
+                    last_name: Doe
+                    phone: '+4917612345678'
+                    email: john@doe.mail
+                    date_of_birth: '1990-05-15'
+                    nationality: DEU
+                    documents:
+                    - type: PASSPORT
+                      id: C01X00T47
+                  legal_address:
+                    address_line1: Musterstraße 12
+                    address_line2: c/o Business GmbH
+                    postal_code: '12345'
+                    city: Musterstadt
+                    state: null
+                    country: DEU
+                  legal_representatives:
+                  - first_name: Jane
+                    last_name: Doe
+                    phone: '+4917698765432'
+                    email: jane@doe.mail
+                    date_of_birth: '1985-11-20'
+                    nationality: DEU
+                    documents:
+                    - type: NATIONAL_ID
+                      id: T220001293
+                  legal_structure: LIMITED_LIABILITY_COMPANY
+                  metadata:
+                    ubos:
+                    - full_name: John Doe
+                    - full_name: Jane Doe
+                    payout_schedule: DAILY
+                    nace_code: '7010'
+                    legal_entity_type: LIMITED_LIABILITY_COMPANY
+                    mcc: 5411,5812
+                    mcc_translation: Grocery stores
+                    platform_status: ACTIVE
+                    lei_code: 529900T8BM49AURSDO55
+        required: true
+      responses:
+        '200':
+          description: Business kyb data added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/201/content/application~1json/schema'
+              examples:
+                business:
+                  value:
+                    id: business-id
+                    legal_name: Business GmbH
+                    business_registration_number: DE123456789
+                    tax_number: DE987654321
+                    bank_account:
+                      account_number: DE53500105174515729675
+                      bic: INGDDEFFXXX
+                      account_holder_name: John Doe
+                      account_number_ending: '9675'
+                    currency: EUR
+                    legal_representative:
+                      first_name: John
+                      last_name: Doe
+                      phone: '+4917612345678'
+                      email: john@doe.mail
+                      phone_ending: '5678'
+                    legal_address:
+                      address_line1: Musterstraße 12
+                      address_line2: c/o Business GmbH
+                      postal_code: '12345'
+                      city: Musterstadt
+                      state: null
+                      country: DEU
+                    partnership_started_date: '2023-01-01'
+                    founding_date: '2023-01-01'
+                    metadata:
+                      ubos:
+                      - full_name: John Doe
+                      - full_name: Jane Doe
+                      payout_schedule: DAILY
+                      nace_code: '7010'
+                      legal_entity_type: LIMITED_LIABILITY_COMPANY
+                      mcc: 5411,5812
+                      mcc_translation: Grocery stores
+                      platform_status: ACTIVE
+        '400':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1non-pi/put/responses/400'
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/kyb-document-uploads:
+    post:
+      tags:
+      - Business
+      operationId: create-kyb-business-document-upload
+      summary: Upload KYB Document for a Business
+      description: 'Create a document upload to provide Know Your Business (KYB) files for a business. This is a two-step flow:
+
+
+        1. **Create Upload** (this endpoint): Provide file metadata and receive a temporary `upload_url`.
+
+        2. **PUT File**: Upload the raw binary file contents to the returned `upload_url` with the `Content-Type` header matching `file_type`.
+
+
+        A maximum of 25 documents per business can be uploaded.
+
+
+        Uploading a file the business already holds — same `file_name` and `file_size` — is answered with
+
+        `409 document_already_exists` and the id of the document it is stored under. The file is kept as uploaded
+
+        the first time and does not count against the limit again, so a repeated upload is safe to ignore.
+
+
+        **Example:**
+
+        ```bash
+
+        curl -X PUT \
+
+        -H "Content-Type: $file_type" \
+
+        --upload-file ./path/to/$file_name \
+
+        "$upload_url"
+
+        ```'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - file_name
+              - file_size
+              - file_type
+              properties:
+                file_name:
+                  type: string
+                  description: File name including extension. Must not exceed 255 characters.
+                  maxLength: 255
+                  example: commercial_register_extract.pdf
+                file_size:
+                  type: integer
+                  format: int64
+                  description: File size in bytes (minimum 1 KB, maximum 10 MB). Must match the actual file size uploaded to the `upload_url`.
+                  minimum: 1024
+                  maximum: 10485760
+                  example: 204800
+                file_type:
+                  type: string
+                  description: MIME type of the file. Must match the actual file type uploaded to the `upload_url`.
+                  enum:
+                  - application/pdf
+                  - image/jpeg
+                  - image/png
+                  example: application/pdf
+            examples:
+              pdf_upload:
+                summary: Upload a PDF document
+                value:
+                  file_name: commercial_register_extract.pdf
+                  file_size: 204800
+                  file_type: application/pdf
+              jpeg_upload:
+                summary: Upload a picture of a document
+                value:
+                  file_name: ubo_id_card.jpg
+                  file_size: 1048576
+                  file_type: image/jpeg
+      responses:
+        '201':
+          description: Upload created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - document_id
+                - upload_url
+                - upload_expiry
+                properties:
+                  document_id:
+                    type: string
+                    format: uuid
+                    description: ID of the document to upload (can be used to reference the uploaded document).
+                    example: 3ec9a5ca-59d2-4412-a3bf-91466dc2d927
+                  upload_url:
+                    type: string
+                    format: uri
+                    description: Temporary URL to upload the file via HTTP PUT. Set the `Content-Type` header to the MIME type provided in `file_type`. Expires after 15 minutes (see `upload_expiry`). A new upload can be created if the URL expires before the file is transferred.
+                    example: https://sfu-6134bce3217446eca2e90b966988d175-u.s3.eu-central-1.amazonaws.com/1fa41125-6bc5-470b-88d3-523b868259d9/sample.pdf?X-Amz-Signature=abc123...
+                  upload_expiry:
+                    type: string
+                    format: date-time
+                    description: Expiration time of the upload URL (ISO 8601 datetime). The file must be uploaded before this time.
+                    example: '2024-01-15T12:30:00.000Z'
+              examples:
+                success:
+                  value:
+                    document_id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                    upload_url: https://sfu-6134bce3217446eca2e90b966988d175-u.s3.eu-central-1.amazonaws.com/1fa41125-6bc5-470b-88d3-523b868259d9/sample.pdf?X-Amz-Signature=abc123...
+                    upload_expiry: '2026-01-15T12:30:00.000Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                invalid_file_size:
+                  summary: File size is not within acceptable boundary
+                  value:
+                    code: validation_error
+                    description: Invalid file size.
+                invalid_file_type:
+                  summary: File type is not supported
+                  value:
+                    code: validation_error
+                    description: Invalid file type.
+                max_documents_reached:
+                  summary: Maximum number of documents reached for this business
+                  value:
+                    code: validation_error
+                    description: Maximum document limit reached.
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                document_already_exists:
+                  summary: The same file was already uploaded for this business
+                  value:
+                    code: document_already_exists
+                    description: The same file was already uploaded as document 'f47ac10b-58cc-4372-a567-0e02b2c3d479'.
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/non-pi:
+    put:
+      tags:
+      - Business
+      operationId: update-business-non-pi
+      summary: Update Business non-PI Data
+      description: 'Update non-personally identifiable data for an existing Business.
+
+
+        This endpoint can be used only for Businesses non-PI data updates. After KYB data is shared for a business this API will return an error.
+
+
+        > 📘
+
+        >
+
+        > Please note that this API is replacing all non-PI data for a Business. It is **not** a `PATCH` operation.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bank_account:
+                  $ref: '#/paths/~1api~1v1~1capital~1businesses/post/requestBody/content/application~1json/schema/properties/bank_account'
+                legal_representative:
+                  $ref: '#/paths/~1api~1v1~1capital~1businesses/post/requestBody/content/application~1json/schema/properties/legal_representative'
+                metadata:
+                  type: object
+                  description: 'Contains a set of flexible, custom key-value pairs. Used for sharing extra data.
+
+
+                    Notable key: `mcc` — accepts a comma-separated string (`"5411,5812"`) or an array of
+
+                    strings; stored and returned as a comma-separated string. See Create Business for details.
+
+                    '
+                  additionalProperties: true
+                  example:
+                    key: value
+                partnership_started_date:
+                  description: Date when the Business started its partnership with the Platform.
+                  type: string
+                  format: date
+                  example: '2020-01-01'
+                founding_date:
+                  description: Date when the Business was established.
+                  type: string
+                  format: date
+                  example: '2020-01-01'
+            examples:
+              update_business_non_pi:
+                value:
+                  bank_account:
+                    account_number_ending: '4422'
+                  legal_representative:
+                    phone_ending: '5511'
+                  metadata:
+                    mcc: 5411,5812
+                    mcc_translation: Grocery stores
+                  partnership_started_date: '2025-04-01'
+                  founding_date: '2025-04-01'
+        required: true
+      responses:
+        '200':
+          description: Business updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/201/content/application~1json/schema'
+              examples:
+                business_updated:
+                  value:
+                    id: business-id
+                    legal_name: null
+                    business_registration_number: null
+                    tax_number: null
+                    bank_account:
+                      account_number: null
+                      bic: null
+                      account_holder_name: null
+                      account_number_ending: '4422'
+                    currency: EUR
+                    legal_representative:
+                      first_name: null
+                      last_name: null
+                      phone: null
+                      email: null
+                      phone_ending: '5511'
+                    legal_address:
+                      address_line1: null
+                      address_line2: null
+                      postal_code: null
+                      city: null
+                      state: null
+                      country: DEU
+                    partnership_started_date: '2025-04-01'
+                    founding_date: '2025-04-01'
+                    metadata:
+                      mcc: 5411,5812
+                      mcc_translation: Grocery stores
+        '400':
+          description: Can't process request due to validation reasons.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Some fields of the request don't match requirements.
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Some fields of the request don't match requirements.
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/performance-data:
+    post:
+      tags:
+      - Business
+      operationId: submit-business-performance-data
+      summary: Submit Business performance data
+      description: 'In order to generate Offers, finmid requires that Platforms share non-PI data on key Business performance indicators (e.g., goods sold, number of transactions, ratings, refund count, etc.). This data is used to confirm the Business''s eligibility for an Offer and to determine the terms of the Offer.
+
+
+        **Guidelines:**
+
+
+        - Multiple data points across multiple months may be submitted in a single API call.
+
+        - All data points within a single API call must be associated with the same Business ID.
+
+        - An API request must include at least one performance indicator per reported date; a request with an empty indicator object will be considered invalid.
+
+        - Only completed reporting periods can be submitted. finmid aggregates the data at the resolution agreed during your integration setup, so a data point is accepted once the period it belongs to has ended: with monthly aggregation, any `report_date` inside the current month is rejected until the month is over, including a `YYYY-MM-DD` date; with daily aggregation, the current day is rejected until it is over.
+
+        - If a single data point covers a period that has not ended yet, the whole request is rejected with `validation_error`.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                required:
+                - report_date
+                - indicators
+                properties:
+                  report_date:
+                    type: string
+                    pattern: ^[0-9]{4}-[0-9]{2}(-[0-9]{2})?$
+                    description: 'ISO 8601 date format. Either YYYY-MM (e.g., "2023-01") or YYYY-MM-DD (e.g., "2023-01-31").
+
+
+                      The reporting period must have ended. finmid aggregates the data at the resolution agreed during
+
+                      your integration setup: with monthly aggregation a date inside the current month is rejected until
+
+                      the month is over, and with daily aggregation the current day is rejected until it is over. If a
+
+                      single data point covers a period that has not ended yet, the whole request is rejected with
+
+                      `validation_error`.
+
+                      '
+                    example: 2023-01
+                  indicators:
+                    description: 'Set of indicators to be reported. At least one indicator must be sent in this object.
+
+
+                      | Indicator | Format | Description | Required |
+
+                      | --- | --- | --- | --- |
+
+                      | `sales_amount` | float, up to 2 decimal numbers | Amount of aggregated sales in the currency of the business. | No |
+
+                      | `transactions_count` | integer | Total number of transactions performed. | No |
+
+                      | `refund_count` | integer | The number of refunds the business had | No |
+
+                      | `rating_value` | float | The average rating for the reported period | No |
+
+                      | `ratings_count` | integer | Number of ratings submitted from the customers | No |
+
+                      | `end_balance` | float | End of month account balance | No |
+
+                      | `incoming_amount` | float | Volume of incoming transactions | No |
+
+                      | `outgoing_amount` | float | Volume of outgoing transactions | No |
+
+                      | `incoming_transaction_count` | integer | Number of incoming transactions | No |
+
+                      | `outgoing_transaction_count` | integer | Number of outgoing transactions | No |
+
+                      '
+                    type: object
+                    additionalProperties: true
+                    example:
+                      sales_amount: 3421.88
+                      transactions_count: 148
+                      refund_count: 13
+                      rating_value: 3.45
+                      ratings_count: 500
+            examples:
+              performance_data_year_month:
+                value:
+                - reportDate: 2023-01
+                  indicators:
+                    sales_amount: 3421.88
+                    transactions_count: 148
+                    refund_count: 13
+                    rating_value: 3.45
+                    ratings_count: 500
+                    end_balance: 4135.54
+                    incoming_amount: 89722.52
+                    outgoing_amount: 92895.25
+                    incoming_transaction_count: 52
+                    outgoing_transaction_count: 46
+                - reportDate: 2023-02
+                  indicators:
+                    sales_amount: 11.12
+              performance_data_year_month_day:
+                value:
+                - reportDate: '2023-03-31'
+                  indicators:
+                    sales_amount: 11.12
+        required: true
+      responses:
+        '204':
+          description: Performance data accepted.
+        '400':
+          description: Can't process request due to validation reasons.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+              examples:
+                validation_error:
+                  summary: The request does not match the expected format
+                  value:
+                    code: validation_error
+                    description: Some fields of the request don't match requirements.
+                report_date_not_elapsed:
+                  summary: A data point covers a reporting period that has not ended yet
+                  value:
+                    code: validation_error
+                    description: 'reportDate must be before 2023-04, got: 2023-04'
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

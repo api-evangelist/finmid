@@ -1,0 +1,467 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Sales statements API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Sales statements
+paths:
+  /api/v1/capital/sales-statements/batches/{id}:
+    get:
+      tags:
+      - Sales statements
+      operationId: get-sales-statements
+      summary: Get Sales statements of a batch
+      description: 'Retrieve aggregated sales statement information for a specific batch.
+
+
+        For every batch, it is possible to request information about the total payment amount, platform commission amount, and the breakdown for each Business. The information is aggregated for each Business (and optional `group_id`) that has shared Sales statements in this batch.
+
+
+        This endpoint provides visibility into sales statements that were reported using Add Sales Statements API. Use this data to determine the total amount to collect from your businesses before completing the batch via Report Funds Collection API (platform-funded) or bank transfer (finmid-funded).'
+      parameters:
+      - name: id
+        in: path
+        description: Identifier of the Batch
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: batch-id
+      responses:
+        '200':
+          description: Aggregated batch payment data.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - repayment_amount
+                - platform_commission_amount
+                - data
+                properties:
+                  id:
+                    description: ID of the batch.
+                    type: string
+                  repayment_amount:
+                    description: Total amount to be deducted from businesses in this batch and paid to finmid. Calculated based on the total sales amount reported in this batch for all businesses.
+                    type: number
+                  platform_commission_amount:
+                    description: Total amount to be deducted from businesses in this batch and to be kept by platform as commission. Calculated based on the total sales amount reported in this batch for all businesses.
+                    type: number
+                  data:
+                    type: array
+                    description: Aggregated data for each `business_id` and `group_id` in this batch.
+                    items:
+                      type: object
+                      required:
+                      - business_id
+                      - credit_id
+                      - sales_amount
+                      - net_amount
+                      - repayment_amount
+                      - platform_commission_amount
+                      - repayment_percent
+                      - group_id
+                      properties:
+                        business_id:
+                          description: Unique identifier of the business, owner of the sales statement.
+                          type: string
+                        credit_id:
+                          description: Unique identifier of funding of this business. `null` value is returned in case there is no funding in `PENDING` status for this business and for statement_date values of the sales-statements.
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        sales_amount:
+                          description: Aggregated amount of sales on the platform of this business/group in this batch.
+                          type: number
+                        net_amount:
+                          description: Aggregated net amount reported for this business/group in this batch. In case `net_amount` values were not reported, `sales_amount` will be used.
+                          type: number
+                        repayment_amount:
+                          description: Amount to be deducted from business/group and paid to finmid. Calculated based on the sales amount reported in this batch for this business/group. `0.00` value signifies that funding is already repaid or funding offer has not been accepted.
+                          type: number
+                        platform_commission_amount:
+                          description: Amount to be deducted from business/group and kept by platform as commission. Calculated based on the sales amount reported in this batch for this business/group.
+                          type: number
+                        repayment_percent:
+                          description: Repayment percent of the funding of this business. `null` value signifies that funding is already repaid or funding offer has not been accepted.
+                          type:
+                          - number
+                          - 'null'
+                        group_id:
+                          description: Identifier of a sales-statement group.
+                          type:
+                          - string
+                          - 'null'
+              examples:
+                single_business_sales:
+                  value:
+                    id: batch-id
+                    repayment_amount: 111.11
+                    platform_commission_amount: 12.34
+                    data:
+                    - business_id: business-id
+                      credit_id: 00000000-0000-0000-0000-000000000001
+                      group_id: null
+                      sales_amount: 823
+                      net_amount: 823
+                      repayment_amount: 111.11
+                      platform_commission_amount: 12.34
+                      repayment_percent: 15
+                multiple_businesses_sales:
+                  value:
+                    id: batch-id
+                    repayment_amount: 156.78
+                    platform_commission_amount: 16.67
+                    data:
+                    - business_id: business-id-1
+                      credit_id: 00000000-0000-0000-0000-000000000001
+                      group_id: null
+                      sales_amount: 823
+                      net_amount: 823
+                      repayment_amount: 111.11
+                      platform_commission_amount: 12.34
+                      repayment_percent: 15
+                    - business_id: business-id-2
+                      credit_id: 00000000-0000-0000-0000-000000000002
+                      group_id: null
+                      sales_amount: 500
+                      net_amount: 500
+                      repayment_amount: 45.67
+                      platform_commission_amount: 4.33
+                      repayment_percent: 10
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Batch not found.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - batch_not_found
+                    description:
+                      example: Batch with id 'batch-id' not found
+              examples:
+                batch_not_found:
+                  value:
+                    code: batch_not_found
+                    description: Batch with id 'batch-id' not found
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    post:
+      tags:
+      - Sales statements
+      operationId: add-sales-statements
+      summary: Add Sales statements to a batch
+      description: 'Share Business''s sales data with finmid so that finmid calculates the collection amounts for you.
+
+
+        Once a Funding Offer has been accepted, payment amounts can be calculated and collected. The platform shares the Business''s sales revenue (Sales statements) with finmid, and finmid calculates the `repayment_amount` based on the `repayment_percent` specified in the terms of the accepted Offer.
+
+
+        > 📘 **Alternative: Report Payment**
+
+        >
+
+        > If you calculate the collection amounts yourself, use Report Payment APIs instead.
+
+
+        ## After adding Sales Statements
+
+
+        The API response contains the calculated `repayment_amount` and `platform_commission_amount` for each Business. You can also retrieve the aggregated results at any time using Get Sales Statements API.
+
+
+        The next step depends on your integration model:
+
+        - **Platform-funded**: Collect the funds from your businesses and then confirm the collection using Report Funds Collection API.
+
+        - **finmid-funded**: Collect the funds from your businesses and send the `repayment_amount` to finmid''s bank account via bank transfer, using the `batch_id` as reference text (simulated via Sales statements batch payment API in sandbox).
+
+
+        ## Options
+
+
+        It is possible to limit the maximum value of the `repayment_amount` calculated for the reported `sales_amount` by specifying the `net_amount`. As a result, the `repayment_amount` for the reported Sales Statement entry will not exceed the `net_amount`.
+
+
+        Within each Business, you can additionally group Sales statements by providing a Sales Statement `group_id` value. This allows sales and payment data in the API response to be aggregated separately for each `business_id`/`group_id` pair.
+
+
+        Sales statements should be shared periodically. The period is defined in the API as a "Batch", which aggregates the Sales statements of one or several Businesses for a given period.'
+      parameters:
+      - name: id
+        in: path
+        description: Identifier of the sales statements period/batch.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - data
+              properties:
+                data:
+                  type: array
+                  description: An array of sales statements information for this batch. It can contain multiple sales statements for one business or several businesses at the same time.
+                  items:
+                    type: object
+                    required:
+                    - sales_statement_id
+                    - statement_date
+                    - business_id
+                    - sales_amount
+                    properties:
+                      sales_statement_id:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                        - description: Globally unique identifier of the sales statement, used as an idempotency key to avoid duplicate entries.
+                          example: sales-statement-id
+                      statement_date:
+                        type: string
+                        pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]{1,9})?$
+                        description: Date of the sales statement entry. Statements with dates outside of period when the funding in `PENDING` status exists will not have an impact on the repayment amounts. ISO 8601 local date and time, no time zone.
+                        example: '2020-01-01T00:00:00.000Z'
+                      business_id:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                        - description: Unique identifier of the business, owner of the sales statement.
+                          example: business-id
+                      sales_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                        - description: The volume of sales of the business on platform. Negative numbers will not have an impact on the repayment amounts.
+                          minimum: 0.01
+                          maximum: 1000000
+                      net_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                        - description: The maximum amount of payment that can be deducted from business/group in this batch.
+                          minimum: 0.01
+                          maximum: 1000000
+                      group_id:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                        - description: Identifier of a sales-statement group. API response data array is aggregated by `business_id` and `group_id`.
+                          type:
+                          - string
+                          - 'null'
+                          example: group-id
+                      metadata:
+                        type:
+                        - object
+                        - 'null'
+                        description: Metadata
+                        example:
+                          key: value
+            examples:
+              single_business_sales:
+                value:
+                  data:
+                  - sales_statement_id: sales-1
+                    statement_date: '2024-01-01T00:00:00.000Z'
+                    business_id: business-id
+                    sales_amount: 823
+              multiple_businesses_sales:
+                value:
+                  data:
+                  - sales_statement_id: sales-1
+                    statement_date: '2024-01-01T00:00:00.000Z'
+                    business_id: business-id-1
+                    sales_amount: 823
+                  - sales_statement_id: sales-2
+                    statement_date: '2024-01-01T00:00:00.000Z'
+                    business_id: business-id-2
+                    sales_amount: 500
+                    net_amount: 400
+                    metadata:
+                      key: value
+              sales_with_groups:
+                value:
+                  data:
+                  - sales_statement_id: sales-1
+                    statement_date: '2024-01-01T00:00:00.000Z'
+                    business_id: business-id
+                    sales_amount: 823
+                    group_id: group-1
+                  - sales_statement_id: sales-2
+                    statement_date: '2024-01-01T00:00:00.000Z'
+                    business_id: business-id
+                    sales_amount: 500
+                    group_id: group-2
+        required: true
+      responses:
+        '200':
+          description: Aggregated batch payment data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v1~1capital~1sales-statements~1batches~1{id}/get/responses/200/content/application~1json/schema'
+              examples:
+                single_business_sales:
+                  value:
+                    id: batch-id
+                    repayment_amount: 111.11
+                    platform_commission_amount: 12.34
+                    data:
+                    - business_id: business-id
+                      credit_id: 00000000-0000-0000-0000-000000000001
+                      group_id: null
+                      sales_amount: 823
+                      net_amount: 823
+                      repayment_amount: 111.11
+                      platform_commission_amount: 12.34
+                      repayment_percent: 15
+                multiple_businesses_sales:
+                  value:
+                    id: batch-id
+                    repayment_amount: 156.78
+                    platform_commission_amount: 16.67
+                    data:
+                    - business_id: business-id-1
+                      credit_id: 00000000-0000-0000-0000-000000000001
+                      group_id: null
+                      sales_amount: 823
+                      net_amount: 823
+                      repayment_amount: 111.11
+                      platform_commission_amount: 12.34
+                      repayment_percent: 15
+                    - business_id: business-id-2
+                      credit_id: 00000000-0000-0000-0000-000000000002
+                      group_id: null
+                      sales_amount: 500
+                      net_amount: 400
+                      repayment_amount: 45.67
+                      platform_commission_amount: 4.33
+                      repayment_percent: 10
+                sales_with_groups:
+                  value:
+                    id: batch-id
+                    repayment_amount: 177.78
+                    platform_commission_amount: 20.67
+                    data:
+                    - business_id: business-id
+                      credit_id: 00000000-0000-0000-0000-000000000001
+                      group_id: group-1
+                      sales_amount: 823
+                      net_amount: 823
+                      repayment_amount: 111.11
+                      platform_commission_amount: 12.34
+                      repayment_percent: 15
+                    - business_id: business-id
+                      credit_id: 00000000-0000-0000-0000-000000000001
+                      group_id: group-2
+                      sales_amount: 500
+                      net_amount: 500
+                      repayment_amount: 66.67
+                      platform_commission_amount: 8.33
+                      repayment_percent: 15
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                      - currency_conflict
+                      - batch_conflict
+                      - batch_repaid
+                      - business_not_found
+                    description:
+                      example: Sales statements data was not provided
+              examples:
+                batch_repaid:
+                  value:
+                    code: batch_repaid
+                    description: Batch has already been repaid
+                duplicate_sales_ids:
+                  value:
+                    code: validation_error
+                    description: 'Duplicate sales statements ids in the request: [sales-1, sales-2]'
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

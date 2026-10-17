@@ -1,0 +1,655 @@
+openapi: 3.2.0
+info:
+  title: B2B Payments Payment Request API
+  version: v2.3
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Payment Request
+paths:
+  /api/v2/b2b-payments/payment-requests:
+    post:
+      tags:
+      - Payment Request
+      operationId: create-payment-request-v2
+      summary: Create Payment Request
+      description: 'The create payment request resource endpoint creates a loan and reserves the specified order amount. This process is called authorisations. When you authorise, finmid will generate a unique id that you''ll use to reference the transaction moving forward.
+
+
+        For creating a new payment request, you need the following things:
+
+        1. Create a new ID for this payment request (we recommend using the invoice number),
+
+        2. Choose repayment term days,
+
+        3. Buyer''s ID specified on creation,
+
+        4. Seller ID
+
+        5. Total order amount.
+
+        7. (Optional) Invoice due date, which can be added now, or via the update endpoint.
+
+
+        > ⚠️ Invoice Number
+
+        >
+
+        > Invoice number is optional upon payment request creation. However, it must be provided prior to capturing the payment request. Invoice number can be provided via the Update Payment Request endpoint'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - repayment_term_days
+              - buyer_id
+              - currency
+              - id
+              - total_amount
+              - seller_id
+              type: object
+              properties:
+                id:
+                  $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                repayment_term_days:
+                  description: Repayment period term in days.
+                  type: integer
+                  minimum: 0
+                  example: 30
+                buyer_id:
+                  $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                seller_id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                  - description: seller of the payment request
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+                currency:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+                  - description: Three-letter currency code (ISO 4217).
+                total_amount:
+                  allOf:
+                  - description: The amount with up to 2 decimal places.
+                    type: number
+                    pattern: ^(?:\+|-)?[0-9]+(?:\.[0-9]+)$
+                    example: 1000
+                  - description: The total amount of the order with up to 2 decimal places.
+                    example: 1000
+                invoice_number:
+                  description: Invoice ID corresponding to the transactions in the payment request.
+                  type: string
+                  maxLength: 100
+                invoice_due_date:
+                  type: string
+                  format: date
+                  example: '2023-08-01'
+                total_fee_override:
+                  $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema/properties/financing_portion/allOf/0/properties/portion/allOf/0'
+                  description: The percentage value expressed relative to the total intent amount, which overrides the default total fee deducted upon payout(s).
+                payout_maximum_now:
+                  type: boolean
+                  description: If set to true, the payment request will be paid-out immediately after creation.
+        required: true
+      responses:
+        '200':
+          description: The created payment request.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - status
+                - creation_time
+                - buyer_id
+                - total_amount
+                - financing_portion
+                - amount_details
+                - amounts_breakdown
+                - currency
+                - repayment_term_days
+                - repayment_date
+                properties:
+                  id:
+                    description: ID of the payment request.
+                    type: string
+                  status:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1list/get/parameters/2/schema/items'
+                    - description: Current status of the payment request.
+                  creation_time:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/created_at/allOf/0'
+                    - description: Creation time of the payment request (ISO 8601 datetime).
+                  buyer_id:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    - description: ID of the buyer associated with the payment request.
+                  order_id:
+                    type: string
+                    description: 'The ID of the order associated with the payment request. Use this ID to perform read/update actions on the order.
+
+                      '
+                  total_amount:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Total amount of the transaction.
+                      example: 1000
+                  financing_portion:
+                    allOf:
+                    - type: object
+                      required:
+                      - portion
+                      - amount
+                      properties:
+                        portion:
+                          allOf:
+                          - type: number
+                            description: Percentage expressed in decimal form (between 0 and 1).
+                            pattern: ^(?:\+|-)?[0-9]+(?:\.[0-9]+)$
+                            example: 0.5
+                          - description: Percentage of total payment request amount that can be financed/paid out.
+                        amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Total amount that can be paid out.
+                            example: 1000
+                    - description: Represents the financing condition for the payment request, in terms of how much can be paid out.
+                  amount_details:
+                    deprecated: true
+                    type: object
+                    required:
+                    - original_amount
+                    - platform_fee_amount
+                    - buyer_fee_amount
+                    - sellers_fee_amount
+                    properties:
+                      original_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                        - description: Original amount as requested.
+                      platform_fee_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                        - description: Applying platform fees.
+                      buyer_fee_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                        - description: Applying buyer fees.
+                      sellers_fee_amount:
+                        type: object
+                        description: 'Map of fees applied per seller. Key is seller id, value is amount of the fee in payment request currency
+
+                          '
+                        additionalProperties:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Applying sellers fees.
+                  amounts_breakdown:
+                    type: object
+                    required:
+                    - total_amount
+                    - fees
+                    - payout_amount
+                    properties:
+                      total_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                        - description: Total amount as requested.
+                      fees:
+                        type: object
+                        required:
+                        - total_fee_amount
+                        - details
+                        properties:
+                          total_fee_amount:
+                            allOf:
+                            - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                            - description: Total fee being charged on the payment request. Deducted upon payout(s).
+                          details:
+                            type: object
+                            required:
+                            - service_fee_amount
+                            - platform_markup_amount
+                            properties:
+                              service_fee_amount:
+                                allOf:
+                                - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                                - description: Fee being charged to platform by finmid. Deducted from total_fee_amount, and calculated against net payout amount.
+                              platform_markup_amount:
+                                allOf:
+                                - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                                - description: Markup platform receives via settlement. Difference between total_fee and service_fee.
+                      payout_amount:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                        - description: Total amount deducted of total fee.
+                  currency:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+                    - description: Three-letter currency code (ISO 4217).
+                  repayment_term_days:
+                    $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/repayment_term_days'
+                  repayment_type:
+                    deprecated: true
+                    description: Repayment type to use in responses.
+                    type: string
+                    enum:
+                    - SCT
+                    - SDD
+                    example: SCT
+                  repayment_date:
+                    type: string
+                    format: date
+                    example: '2023-08-01'
+                  metadata:
+                    description: 'Set of **key-value pairs** that are attached to the payment request. Used for sharing extra data.
+
+                      '
+                    type: object
+                  invoice_number:
+                    description: Invoice ID corresponding to the transactions in the payment request.
+                    $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/invoice_number'
+                  invoice_due_date:
+                    type: string
+                    format: date
+                    example: '2023-08-01'
+                  payouts:
+                    description: A result set containing payouts for the given payment request.
+                    type: array
+                    items:
+                      $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1payouts/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/payment-requests/list:
+    get:
+      tags:
+      - Payment Request
+      operationId: get-payment-requests-v2
+      summary: Get Payment Requests
+      description: Returns a list of payment requests. Cursor-based pagination is supported and you can make use of filter parameters to change sorting or limit the results to only payment requests with certain status.
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Creation date of the first payment request to be included in the results.
+          example: '2022-01-01'
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Creation date of the last payment request to be included in the results.
+          example: '2022-01-31'
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: array
+          description: 'List of payment request status. Providing one or more status only includes payment requests that have one of the provided status.
+
+            '
+          items:
+            type: string
+            enum:
+            - PENDING
+            - PROCESSING
+            - PENDING_REPAYMENT
+            - CANCELLED
+            - CLOSED
+            - DEFAULT
+      - name: sort_by
+        in: query
+        required: false
+        schema:
+          description: Sorting of the results.
+          type: string
+          enum:
+          - CREATED_ASC
+          - CREATED_DESC
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          description: A cursor used for pagination.
+          example: cGktMTIzNDV8MjAyMi0wNC0yOFQwNjowOToxNyswMDowMAo=
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          description: Limits the amount of results per page.
+          example: 20
+          type: integer
+          format: int32
+          default: 100
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: A result set containing payment requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: object
+                    properties:
+                      next_cursor:
+                        type: string
+                        description: A cursor pointing to the beginning of the next page.
+                        example: TkVYVHxmMzA1ZjBlNi00YzM2LTQwZmEtOTI5YS0yZjJiODJlYjU2ZjR8MjAyMi0xMC0yOFQxMDoxMDoyOS4zMTkzMDlafA
+                      previous_cursor:
+                        type: string
+                        description: A cursor pointing to the beginning of the previous page.
+                        example: UFJFVklPVVN8ZjhjODRmYzctZDIyMS00NzYxLThlMTktN2QxYTM5ZTIyZDgxfDIwMjItMTEtMDJUMTM6NTE6MTkuMzI3MTk1Wnw
+                  data:
+                    description: List of payment requests.
+                    type: array
+                    items:
+                      $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/payment-requests/{id}:
+    get:
+      tags:
+      - Payment Request
+      operationId: get-payment-request-v2
+      summary: Get Payment Request
+      description: For getting a certain payment request's details, you'll only need the payment request's ID specified on creation.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The payment request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/payment-requests/{id}/cancel:
+    put:
+      tags:
+      - Payment Request
+      operationId: cancel-payment-request-v2
+      summary: Cancel Payment Request
+      description: 'Cancels an existing payment request and releases the loan amount reserved for the payment. For this you''ll only need the payment request ID specified on creation.
+
+        > 📘
+
+        >
+
+        > This operation is only permitted if the seller has captured no items in the order. Please note that cancelling a payment request is not reversible.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          allOf:
+          - type: string
+            pattern: ^[a-zA-Z0-9_\.\-]{1,100}$
+            maxLength: 100
+          - description: ID of the payment request.
+            example: pi-12345
+      responses:
+        '200':
+          description: The payment request is canceled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/payment-requests/{id}/payouts:
+    post:
+      tags:
+      - Payment Request
+      operationId: create-payment-request-payout
+      summary: Create Payout
+      description: 'The payout payment request endpoint triggers a payment to the seller associated with the loan initially reserved during the creation of the payment request. As soon as a payout is created, the payment is processed immediately through finmid.
+
+        After a payout is created, the payment request status will change to PROCESSING if the payment request amount is only partially paid. Once the max payout amount is fully paid out, the status will then change to PENDING_REPAYMENT.
+
+        To create a payout for a certain payment request, you''ll need four things:
+
+        1. The payment request ID specified during creation.
+
+        2. The Payout ID, a unique identifier within the payment request of your choice for this payout.
+
+        3. The payout type, which can be PERCENTAGE, AMOUNT, or MAX.
+
+        4. The payout value, which is related to the payout type and is only required for percentage and amount types.
+
+        For instance, if the payout type is percentage and the value is 50, then 50% of the payment request will be paid out.
+
+        The payout response body includes:
+
+
+        - Gross amount: This is the total amount of the payout relative to the payment request including fees.
+
+
+        - Net amount: This is the amount the seller actually receives, calculated as the gross amount minus fees.
+
+
+        - Status: This reflects the state of the seller''s payment, with three possible statuses: `PENDING`, `PAID_OUT`, and `REJECTED`.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Id of the payment request for which to create a payout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - required:
+                - id
+                - value
+                - payout_type
+                properties:
+                  id:
+                    $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    description: Id given to the payout, must be unique within a payment request.
+                  payout_type:
+                    type: string
+                    enum:
+                    - AMOUNT
+                  value:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+              - required:
+                - id
+                - payout_type
+                - value
+                properties:
+                  id:
+                    $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    description: Id given to the payout, must be unique within a payment request.
+                  payout_type:
+                    type: string
+                    enum:
+                    - PERCENTAGE
+                  value:
+                    $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema/properties/financing_portion/allOf/0/properties/portion/allOf/0'
+                    description: The percentage to payout (between 0 and 1), as expressed relative to the total payment request amount.
+              - required:
+                - id
+                - payout_type
+                properties:
+                  id:
+                    $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    description: Id given to the payout, must be unique within a payment request.
+                  payout_type:
+                    type: string
+                    enum:
+                    - MAX
+      responses:
+        '200':
+          description: The payout request has been successfully created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - status
+                - seller_id
+                - gross_amount
+                - net_amount
+                - currency
+                - creation_time
+                properties:
+                  id:
+                    description: ID of the payment request.
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - PENDING
+                    - PAID_OUT
+                    - REJECTED
+                    description: Current status of the payout.
+                  seller_id:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    - description: ID of the seller.
+                      example: seller-321
+                  gross_amount:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Gross amount of the payout.
+                      example: 1000
+                  net_amount:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Net amount of the payout (Gross minus any fees charged on the payout).
+                      example: 990
+                  currency:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+                    - description: Three-letter currency code (ISO 4217).
+                  creation_time:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/created_at/allOf/0'
+                    - description: Creation time of the payout (ISO 8601 datetime).
+                  booking_time:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/created_at/allOf/0'
+                    - description: Booking time of the payout (ISO 8601 datetime).
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/payment-requests/{id}/update:
+    patch:
+      tags:
+      - Payment Request
+      operationId: update-payment-request-v2
+      summary: Update Payment Request
+      description: Allows for the updating of invoice number and invoice due date fields. Invoice number must be provided to execute a payout.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          allOf:
+          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+          - description: ID of the payment request.
+            example: pi-12345
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoice_number:
+                  description: Invoice ID corresponding to the transactions in the payment request.
+                  $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/invoice_number'
+                invoice_due_date:
+                  type: string
+                  format: date
+                  example: '2023-08-01'
+                total_amount:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                  - description: The new total amount of the Payment Request with up to 2 decimal places.
+                    example: 1000
+        required: true
+      responses:
+        '200':
+          description: The payment request is updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/cancel-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-buyer-v2.md
+  - https://docs.finmid.com/reference/create-payment-request-payout.md
+  - https://docs.finmid.com/reference/create-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-seller-v2.md
+  - https://docs.finmid.com/reference/get-buyer-limit-v2.md
+  - https://docs.finmid.com/reference/get-buyer-v2.md
+  - https://docs.finmid.com/reference/get-buyers-for-platform.md
+  - https://docs.finmid.com/reference/get-payment-request-v2.md
+  - https://docs.finmid.com/reference/get-payment-requests-v2.md
+  - https://docs.finmid.com/reference/get-seller-v2.md
+  - https://docs.finmid.com/reference/get-sellers-for-platform.md
+  - https://docs.finmid.com/reference/get-tasks.md
+  - https://docs.finmid.com/reference/simulate-buyer-v2.md
+  - https://docs.finmid.com/reference/simulate-payment-request-repayment-v2.md
+  - https://docs.finmid.com/reference/simulate-seller-v2.md
+  - https://docs.finmid.com/reference/update-buyer-v2.md
+  - https://docs.finmid.com/reference/update-payment-request-v2.md
+  - https://docs.finmid.com/reference/update-seller-bank-account-v2.md
+  - https://docs.finmid.com/reference/update-seller-v2.md
+  - https://docs.finmid.com/reference/upload-payment-request-documents.md
+  merge:
+    pages: 21
+    deduped: 119
+    conflicts_kept_first: 0

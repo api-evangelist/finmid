@@ -1,0 +1,488 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL CSP Financial Document API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: CSP Financial Document
+paths:
+  /api/v1/capital/businesses/{business_id}/documents/csp:
+    get:
+      tags:
+      - CSP Financial Document
+      operationId: list-csp-documents
+      summary: List CSP Financial Documents
+      description: 'Retrieve the latest CSP financial documents for a Business.
+
+
+        Returns the list of uploaded documents along with the submission status.
+
+        Once documents have been submitted via the finalize endpoint, `is_submitted` will be `true`.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      responses:
+        '200':
+          description: List of CSP financial documents
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - is_submitted
+                - documents
+                properties:
+                  is_submitted:
+                    type: boolean
+                    description: Whether the CSP financial documents submission has been finalized. If `true`, no new CSP documents can be uploaded for this Funding. This flag can be used to indicate that some CSP documents were already shared by Business.
+                    example: false
+                  documents:
+                    type: array
+                    description: List of uploaded CSP financial documents for the current Funding.
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - name
+                      - size
+                      - created_at
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique identifier of the document.
+                          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                        name:
+                          type: string
+                          description: Name of the uploaded file (without extension).
+                          example: annual_report_2025
+                        extension:
+                          type:
+                          - string
+                          - 'null'
+                          description: File extension of the uploaded document (if provided). Can be used to show a different icon for file.
+                          example: pdf
+                        size:
+                          type: integer
+                          format: int64
+                          description: File size in bytes.
+                          example: 204800
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: Timestamp when the document was uploaded (ISO 8601 datetime).
+                          example: '2026-01-15T10:30:00.000Z'
+              examples:
+                documents_pending:
+                  summary: Documents uploaded but not yet submitted
+                  value:
+                    is_submitted: false
+                    documents:
+                    - id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                      name: annual_report_2025.pdf
+                      extension: pdf
+                      size: 204800
+                      created_at: '2026-01-15T10:30:00.000Z'
+                    - id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                      name: bank_statement_q4.pdf
+                      extension: pdf
+                      size: 512000
+                      created_at: '2026-01-15T11:00:00.000Z'
+                documents_submitted:
+                  summary: Documents already submitted
+                  value:
+                    is_submitted: true
+                    documents:
+                    - id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                      name: annual_report_2025.pdf
+                      extension: pdf
+                      size: 204800
+                      created_at: '2026-01-15T10:30:00.000Z'
+                empty_list:
+                  summary: No documents uploaded yet
+                  value:
+                    is_submitted: false
+                    documents: []
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Business or CSP funding not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                business_not_found:
+                  summary: Business not found
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+                no_active_csp_funding_application:
+                  summary: No active CSP funding application
+                  value:
+                    code: no_active_csp_funding_application
+                    description: No active CSP funding application found for this business
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/documents/csp/submit:
+    post:
+      tags:
+      - CSP Financial Document
+      operationId: finalize-csp-document-submission
+      summary: Finalize CSP Financial Documents Submission
+      description: 'Finalize the submission of CSP financial documents for a Business.
+
+
+        Once finalized, no further documents can be uploaded or deleted for the current submission.
+
+        At least one document must have been uploaded before the submission can be finalized.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      responses:
+        '204':
+          description: Submission finalized successfully
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                no_documents_uploaded:
+                  summary: No documents uploaded
+                  value:
+                    code: validation_error
+                    description: No CSP financial documents uploaded
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Business or CSP funding not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                business_not_found:
+                  summary: Business not found
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+                no_active_csp_funding_application:
+                  summary: No active CSP funding application
+                  value:
+                    code: no_active_csp_funding_application
+                    description: No active CSP funding application found for this business
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/documents/csp/uploads:
+    post:
+      tags:
+      - CSP Financial Document
+      operationId: create-csp-document-upload
+      summary: Upload CSP Financial Document
+      description: 'Create a presigned upload URL for a CSP financial document.
+
+
+        **Prerequisites:** The business must have an accepted CSP offer and an active CSP funding that has not been paid out yet. Document uploads are no longer possible once the submission has been finalized.
+
+
+        This is a two-step flow:
+
+
+        1. **Create Upload** (this endpoint): Provide file metadata and receive a temporary `upload_url`.
+
+        2. **PUT File**: Upload the raw binary file contents to the returned `upload_url` with the `Content-Type` header matching `file_type`.
+
+
+        A maximum of 20 documents per business can be uploaded.
+
+
+        **Example:**
+
+        ```bash
+
+        curl -X PUT \
+
+        -H "Content-Type: $file_type" \
+
+        --upload-file ./path/to/$file_name \
+
+        "$upload_url"
+
+        ```
+
+
+        **Example flow:**
+
+        1. Fetch the current state via List CSP Financial Documents to check if a submission is already in progress or pick up where a previous session left off.
+
+        2. Upload one or more documents using this endpoint.
+
+        3. Optionally remove unwanted documents via Delete CSP Financial Document.
+
+        4. Once at least one document is uploaded, finalize via Finalize CSP Financial Documents Submission.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - file_name
+              - file_size
+              - file_type
+              properties:
+                file_name:
+                  type: string
+                  description: File name including extension. Must not exceed 255 characters.
+                  maxLength: 255
+                  example: annual_report_2025.pdf
+                file_size:
+                  type: integer
+                  format: int64
+                  description: File size in bytes (minimum 1 KB, maximum 10 MB). Must match the actual file size uploaded to the `upload_url`.
+                  minimum: 1024
+                  maximum: 10485760
+                  example: 204800
+                file_type:
+                  type: string
+                  description: MIME type of the file. Must match the actual file type uploaded to the `upload_url`.
+                  enum:
+                  - application/pdf
+                  - image/jpeg
+                  - image/png
+                  example: application/pdf
+            examples:
+              pdf_upload:
+                summary: Upload a PDF document
+                value:
+                  file_name: annual_report_2025.pdf
+                  file_size: 204800
+                  file_type: application/pdf
+              jpeg_upload:
+                summary: Upload an image document
+                value:
+                  file_name: bank_statement_scan.jpg
+                  file_size: 1048576
+                  file_type: image/jpeg
+      responses:
+        '201':
+          description: Upload created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - document_id
+                - upload_url
+                - upload_expiry
+                properties:
+                  document_id:
+                    type: string
+                    format: uuid
+                    description: ID of the document to upload (can be used to reference the uploaded document).
+                    example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                  upload_url:
+                    type: string
+                    format: uri
+                    description: Temporary URL to upload the file via HTTP PUT. Set the `Content-Type` header to the MIME type provided in `file_type`. Expires after 15 minutes (see `upload_expiry`). A new upload can be created if the URL expires before the file is transferred.
+                    example: https://sfu-6134bce3217446eca2e90b966988d175-u.s3.eu-central-1.amazonaws.com/1fa41125-6bc5-470b-88d3-523b868259d9/annual_report_2025.pdf?X-Amz-Signature=abc123...
+                  upload_expiry:
+                    type: string
+                    format: date-time
+                    description: Expiration time of the upload URL (ISO 8601 datetime). The file must be uploaded before this time.
+                    example: '2026-01-15T12:30:00.000Z'
+              examples:
+                success:
+                  value:
+                    document_id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                    upload_url: https://sfu-6134bce3217446eca2e90b966988d175-u.s3.eu-central-1.amazonaws.com/1fa41125-6bc5-470b-88d3-523b868259d9/annual_report_2025.pdf?X-Amz-Signature=abc123...
+                    upload_expiry: '2026-01-15T12:30:00.000Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                invalid_file_size:
+                  summary: File size is not within acceptable boundary
+                  value:
+                    code: validation_error
+                    description: Invalid file size, must be between 1024 and 10485760 bytes
+                invalid_file_type:
+                  summary: File type is not supported
+                  value:
+                    code: validation_error
+                    description: 'Invalid file type, allowed: application/pdf, image/jpeg, image/png'
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Business or CSP funding not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                business_not_found:
+                  summary: Business not found
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+                no_active_csp_funding_application:
+                  summary: No active CSP funding application
+                  value:
+                    code: no_active_csp_funding_application
+                    description: No active CSP funding application found for this business
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                max_documents_reached:
+                  summary: Maximum number of documents reached
+                  value:
+                    code: maximum_documents_limit_reached
+                    description: Maximum document limit of 20 reached
+                submission_already_finalized:
+                  summary: Documents submission has already been finalized
+                  value:
+                    code: submission_already_finalized
+                    description: Documents submission has already been finalized
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/businesses/{business_id}/documents/csp/{document_id}:
+    delete:
+      tags:
+      - CSP Financial Document
+      operationId: delete-csp-document
+      summary: Delete CSP Financial Document
+      description: 'Delete a previously uploaded CSP financial document.
+
+
+        A document can only be deleted before the submission has been finalized.
+
+        Once the submission is finalized, documents can no longer be deleted.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - name: document_id
+        in: path
+        required: true
+        description: Unique identifier of the CSP financial document.
+        schema:
+          type: string
+          format: uuid
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+      responses:
+        '204':
+          description: Document deleted successfully
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Business or document not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                business_not_found:
+                  summary: Business not found
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+                document_not_found:
+                  summary: Document not found
+                  value:
+                    code: document_not_found
+                    description: Document not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                submission_already_finalized:
+                  summary: Documents submission has already been finalized
+                  value:
+                    code: submission_already_finalized
+                    description: Documents submission has already been finalized
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

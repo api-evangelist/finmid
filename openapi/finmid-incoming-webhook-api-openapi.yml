@@ -1,0 +1,324 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Incoming Webhook API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Incoming Webhook
+paths:
+  /api/v1/capital/incoming-webhooks:
+    post:
+      tags:
+      - Incoming Webhook
+      operationId: receive-incoming-webhook
+      summary: Receive Incoming Webhook
+      description: Endpoint for receiving incoming webhooks with generic data payloads. It acts as an initial integration point for early-stage data adoption. Once a data flow is standardized, it will be implemented as a separate, dedicated endpoint.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - id
+              - business_id
+              - type
+              - data
+              properties:
+                id:
+                  type: string
+                  description: Idempotency key for the webhook
+                business_id:
+                  type: string
+                  description: ID of the business this webhook relates to
+                type:
+                  type: string
+                  enum:
+                  - business.termination
+                  description: Webhook event type
+                data:
+                  type: object
+                  additionalProperties: true
+                  description: Generic webhook payload data
+            examples:
+              business_termination:
+                value:
+                  id: webhook-123
+                  business_id: business-456
+                  type: business.termination
+                  data:
+                    key1: value1
+        required: true
+      responses:
+        '200':
+          description: Webhook received successfully.
+        '400':
+          description: Can't process request due to validation reasons.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Some fields of the request don't match requirements.
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Some fields of the request don't match requirements.
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '409':
+          description: Webhook with this idempotency key already exists.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - incoming_webhook_conflict
+                    description:
+                      example: Webhook with id 'webhook-123' already processed
+              examples:
+                conflict:
+                  value:
+                    code: incoming_webhook_conflict
+                    description: Webhook with id 'webhook-123' already processed
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/payments/webhooks/payout/outcome:
+    post:
+      tags:
+      - Incoming Webhook
+      operationId: receive-payout-outcome
+      summary: Receive Payout Outcome
+      description: '> ⚠️ This webhook is relevant only for platforms that provide their own capital to businesses.
+
+
+        Webhook endpoint for receiving payout execution outcome from the platform.
+
+
+        After finmid sends a payout instruction via Execute Payment Transaction, the platform must notify finmid of the outcome by calling this endpoint.
+
+
+        The platform sends a confirmation with either:
+
+        - **`SETTLED`**: the payment was successfully deposited into the beneficiary''s bank account, including the settlement timestamp.
+
+        - **`FAILED`**: the payment could not be completed, including the failure reason.
+
+
+        ## Correlation
+
+
+        The `finmid_idempotency_key` in the request body is the same `idempotency_key` that finmid provided in the original Execute Payment Transaction request. It is used to match this confirmation to the original payout instruction.
+
+
+        ## Idempotency
+
+
+        This endpoint is **idempotent on the pair `(finmid_idempotency_key, type)`**.
+
+
+        Retransmitting the same confirmation (same key, same `type`) any number of times returns **200** and does not cause duplicate processing. Platforms can therefore safely retry on network failures, timeouts, or 5xx responses without special handling.
+
+
+        A **409 - CONFLICT** is returned only when the platform sends an outcome (`SETTLED` or `FAILED`) that contradicts a terminal state already recorded for that `finmid_idempotency_key` — for example, `SETTLED` after finmid has already marked the payment as `FAILED`, or vice versa. 409 is therefore a **state-conflict signal**, not a duplicate-detection signal: it indicates a real divergence between the platform''s view and finmid''s view of the payment that requires investigation.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - finmid_idempotency_key
+              - business_id
+              - type
+              properties:
+                finmid_idempotency_key:
+                  type: string
+                  description: 'The `idempotency_key` that finmid sent in the original [Execute Payment Transaction](#tag/Payment/operation/execute-payment-transaction) request.
+
+                    Used to correlate this confirmation with the original payout instruction.
+
+                    '
+                  example: op-fund-2026.crd-001.biz-123
+                business_id:
+                  type: string
+                  description: 'The `business_id` that finmid sent in the original [Execute Payment Transaction](#tag/Payment/operation/execute-payment-transaction) request.
+
+                    Echoed back to allow finmid to correlate the confirmation with the business.
+
+                    '
+                  example: biz-123
+                type:
+                  type: string
+                  enum:
+                  - SETTLED
+                  - FAILED
+                  description: 'Outcome of the payout execution:
+
+                    - `SETTLED`: the payment was successfully deposited into the beneficiary''s bank account.
+
+                    - `FAILED`: the payment could not be completed.
+
+                    '
+                settled_at:
+                  type:
+                  - string
+                  - 'null'
+                  format: date-time
+                  description: 'Timestamp when the payment was settled (ISO 8601 datetime). Required when `type` is `SETTLED`, null otherwise.
+
+                    '
+                  example: '2026-03-10T14:30:00Z'
+                failure_reason:
+                  type:
+                  - string
+                  - 'null'
+                  description: 'Reason for the failure. Required when `type` is `FAILED`, null otherwise.
+
+                    '
+                  example: INSUFFICIENT_FUNDS
+            examples:
+              payout_settled:
+                summary: Payout successfully settled
+                value:
+                  finmid_idempotency_key: op-fund-2026.crd-001.biz-123
+                  business_id: biz-123
+                  type: SETTLED
+                  settled_at: '2026-03-10T14:30:00Z'
+              payout_failed:
+                summary: Payout failed
+                value:
+                  finmid_idempotency_key: op-fund-2026.crd-001.biz-123
+                  business_id: biz-123
+                  type: FAILED
+                  failure_reason: INSUFFICIENT_FUNDS
+        required: true
+      responses:
+        '200':
+          description: 'Payout confirmation received successfully. Returned both for the first successful processing
+
+            and for any subsequent retransmission of the same `(finmid_idempotency_key, type)` pair.
+
+            '
+        '400':
+          $ref: '#/paths/~1api~1v1~1capital~1incoming-webhooks/post/responses/400'
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '409':
+          description: 'The payout outcome conflicts with the current state of the payment on finmid''s side.
+
+            This happens when the platform sends an outcome (`SETTLED` or `FAILED`) that contradicts
+
+            a terminal state already recorded for the same `finmid_idempotency_key` — for example,
+
+            `SETTLED` for a payment that finmid has already marked as `FAILED` (or vice versa).
+
+
+            This is **not** a duplicate-detection error: retransmitting the same outcome for the
+
+            same `finmid_idempotency_key` returns 200 (see the Idempotency section of the endpoint).
+
+            '
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - INVALID_STATE_TRANSITION
+                    description:
+                      example: Payment is in Failed state — cannot apply SETTLED outcome
+              examples:
+                settled_after_failed:
+                  summary: SETTLED received after the payment was already marked as FAILED
+                  value:
+                    code: INVALID_STATE_TRANSITION
+                    description: Payment is in Failed state — cannot apply SETTLED outcome
+                failed_after_settled:
+                  summary: FAILED received after the payment was already marked as SETTLED
+                  value:
+                    code: INVALID_STATE_TRANSITION
+                    description: Payment is in Settled state — cannot apply FAILED outcome
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

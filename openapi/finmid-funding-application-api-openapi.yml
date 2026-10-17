@@ -1,0 +1,454 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Funding Application API
+  version: v1.0
+  description: Endpoints for managing Funding Applications.
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Funding Application
+  description: Endpoints for managing Funding Applications.
+paths:
+  /api/v1/capital/businesses/{business_id}/fundings/applications:
+    get:
+      tags:
+      - Funding Application
+      operationId: get-funding-applications
+      summary: Get Funding Applications
+      description: 'This endpoint returns the Funding Applications for a Business, newest first (sorted by `submitted_at`).
+
+
+        A Funding Application represents the intermediate step in the financing lifecycle: **Offer → Funding Application → Funding**. It is created when a Business accepts an Offer and captures the review process that determines whether a Funding will be issued.
+
+
+        The lifecycle of a Funding Application is as follows:
+
+        - `IN_REVIEW`: the business screening has begun and the funding application is under review
+
+        - `APPROVED`: the review has passed and a Funding has been created. The `credit_id` field is populated once the Funding is paid out.
+
+        - `REJECTED`: the review has not passed and no Funding will be created for this application.
+
+        - `CANCELLED`: the application was cancelled on business request while still in review; no Funding will be created.
+
+
+        At any given time, there can be only one Funding Application that is not in a final state (APPROVED, REJECTED, or CANCELLED).
+
+
+        ### Required Actions
+
+        While a Funding Application is in `IN_REVIEW` status, the review process may require the business to take specific actions — for example, uploading documents. These are surfaced in the `required_actions` array.
+
+        Each entry describes the type of action needed, the reason (which provides contextual information) and when it was requested.
+
+        When required actions are present, the business automatically receives an email notification.
+
+        The array is empty when no action is pending.
+
+
+        The optional `status` query parameter allows filtering applications by their current status.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - name: status
+        in: query
+        description: Filter for status of the Funding Application.
+        required: false
+        schema:
+          description: 'Status of the Funding Application.
+
+
+            - `IN_REVIEW`: the business screening has begun and the application is under review.
+
+            - `APPROVED`: the application has been approved and a Funding has been created.
+
+            - `REJECTED`: the application has been rejected. No Funding will be created.
+
+            - `CANCELLED`: the application was cancelled on business request while still in review; no Funding will be created.
+
+            '
+          type: string
+          enum:
+          - IN_REVIEW
+          - APPROVED
+          - REJECTED
+          - CANCELLED
+          example: IN_REVIEW
+      responses:
+        '200':
+          description: List of Funding Applications for this Business.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    description: List of Funding Applications.
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - offer_id
+                      - status
+                      - required_actions
+                      - reviews
+                      - rejection_reasons
+                      - submitted_at
+                      - resolved_at
+                      - credit_id
+                      properties:
+                        id:
+                          description: 'Unique identifier of the Funding Application.
+
+                            Webhooks carry this value as `funding_application_id` in the `capital_funding_application.*` events, and as `funding_id` in [`capital_funding.created`](./capital-webhooks#capital_fundingcreated) and in the deprecated [`capital_funding.rejected`](./capital-webhooks#capital_fundingrejected).
+
+                            '
+                          type: string
+                          format: uuid
+                          example: 20e9a201-9b22-4768-887b-1b7559b699c6
+                        offer_id:
+                          description: Unique identifier of the Offer associated with this Funding Application.
+                          type: string
+                          format: uuid
+                          example: 550e8400-e29b-41d4-a716-446655440001
+                        status:
+                          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1fundings~1applications/get/parameters/1/schema'
+                        required_actions:
+                          description: 'Actions the business must complete to progress the Funding Application.
+
+                            Only populated when the application is actively waiting on the business (i.e. documents have been requested during the review process).
+
+                            Empty when no action is needed from the business.
+
+                            '
+                          type: array
+                          items:
+                            type: object
+                            required:
+                            - type
+                            - reason
+                            - requested_at
+                            properties:
+                              type:
+                                description: 'Type of action the business must complete to progress the Funding Application.
+
+
+                                  - `DOCUMENT_UPLOAD`: the business needs to upload one or more documents requested during the review process.
+
+                                  - `E_SIGNATURE`: the business needs to electronically sign a document.
+
+                                  '
+                                type: string
+                                enum:
+                                - DOCUMENT_UPLOAD
+                                - E_SIGNATURE
+                                example: DOCUMENT_UPLOAD
+                              reason:
+                                description: 'Reason why the action is required, providing contextual information about what the business needs to address.
+
+
+                                  - `DOCUMENT_REQUEST`: generic document request (legacy).
+
+                                  - `UNRESOLVED_BUSINESS_IDENTITY`: the business could not be found in public records and needs to provide additional identity documentation.
+
+                                  - `REGULATORY_SIGNING_REQUIRED`: a regulatory requirement requires the business to sign documentation.
+
+                                  '
+                                type: string
+                                enum:
+                                - DOCUMENT_REQUEST
+                                - UNRESOLVED_BUSINESS_IDENTITY
+                                - REGULATORY_SIGNING_REQUIRED
+                                example: UNRESOLVED_BUSINESS_IDENTITY
+                              requested_at:
+                                description: Timestamp in UTC when the action was requested (ISO 8601 datetime).
+                                type: string
+                                format: date-time
+                                example: '2025-04-01T12:00:00.000Z'
+                        reviews:
+                          description: 'List of reviews raised during the Funding Application''s screening. Each entry carries the review code, the timestamp it was raised, and (when resolved) the resolution timestamp.
+
+                            Entries remain after they are resolved — the list represents the full review history, not the current open set. Empty until the screening starts, and temporarily empty when the review data cannot be retrieved.
+
+                            '
+                          type: array
+                          items:
+                            description: 'A single review event raised during the Funding Application''s screening.
+
+                              '
+                            type: object
+                            required:
+                            - code
+                            - raised_at
+                            - resolved_at
+                            properties:
+                              code:
+                                description: 'Reason the review was raised.
+
+
+                                  - `COMPANY_IDENTIFICATION_PENDING`: business registration could not be verified automatically; a registration document has been requested from the merchant.
+
+                                  - `COMPLIANCE_REVIEW_IN_PROGRESS`: a compliance review is in progress; no action is required from the merchant.
+
+                                  - `SANCTIONS_REVIEW_IN_PROGRESS`: a sanctions review is in progress; the merchant may receive an email to verify details.
+
+                                  - `RISK_REVIEW_IN_PROGRESS`: a risk review is in progress; no action is required from the merchant.
+
+                                  - `BANK_ACCOUNT_DATA_MISSING`: bank account details are incomplete (IBAN or account holder name missing); the merchant must provide them.
+
+                                  - `BANK_ACCOUNT_IBAN_NOT_FOUND`: the bank account IBAN could not be verified; the merchant must confirm or correct it.
+
+                                  - `LEGAL_REPRESENTATIVE_MISMATCH`: legal representative verification is required.
+
+                                  - `LEGAL_REPRESENTATIVE_DATA_MISSING`: legal representative information is incomplete; the merchant must provide it.
+
+                                  - `SIGNED_DOCUMENTS_UPLOAD_PENDING`: signed documents are awaited from the merchant.
+
+                                  '
+                                type: string
+                                enum:
+                                - COMPANY_IDENTIFICATION_PENDING
+                                - COMPLIANCE_REVIEW_IN_PROGRESS
+                                - SANCTIONS_REVIEW_IN_PROGRESS
+                                - RISK_REVIEW_IN_PROGRESS
+                                - BANK_ACCOUNT_DATA_MISSING
+                                - BANK_ACCOUNT_IBAN_NOT_FOUND
+                                - LEGAL_REPRESENTATIVE_MISMATCH
+                                - LEGAL_REPRESENTATIVE_DATA_MISSING
+                                - SIGNED_DOCUMENTS_UPLOAD_PENDING
+                                example: COMPLIANCE_REVIEW_IN_PROGRESS
+                              raised_at:
+                                description: Timestamp in UTC when the review was raised.
+                                type: string
+                                format: date-time
+                                example: '2025-04-02T12:00:00.000Z'
+                              resolved_at:
+                                description: Timestamp in UTC when the review was resolved.
+                                type:
+                                - string
+                                - 'null'
+                                format: date-time
+                                example: '2025-04-03T09:00:00.000Z'
+                        rejection_reasons:
+                          description: 'Reasons why the Funding Application was rejected. Only populated when `status` is `REJECTED`; empty otherwise.
+
+                            May contain multiple values when several rejection reasons apply. Temporarily empty when the review data cannot be retrieved.
+
+                            '
+                          type: array
+                          items:
+                            $ref: '#/paths/~1api~1v1~1capital~1simulation~1fundings~1applications~1{application_id}~1reject/post/requestBody/content/application~1json/schema/properties/rejection_reasons/items'
+                        submitted_at:
+                          description: Timestamp in UTC when the application was submitted (ISO 8601 datetime).
+                          type: string
+                          format: date-time
+                          example: '2025-03-15T10:30:00.000Z'
+                        resolved_at:
+                          description: Timestamp in UTC when the application reached a final state — approved, rejected, or cancelled (ISO 8601 datetime). `null` if the application has not been resolved yet.
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          example: '2025-03-16T14:00:00.000Z'
+                        credit_id:
+                          description: Unique identifier of the Funding created from this application. Populated once the Funding is paid out; `null` before then.
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          example: 20e9a201-9b22-4768-887b-1b7559b699c6
+              examples:
+                applications_list:
+                  summary: Applications listed newest first
+                  value:
+                    data:
+                    - id: b3e8d4c2-7a19-4f5e-8c61-0e2f9a7d3b52
+                      offer_id: 550e8400-e29b-41d4-a716-446655440002
+                      status: IN_REVIEW
+                      required_actions: []
+                      reviews: []
+                      rejection_reasons: []
+                      submitted_at: '2025-04-01T09:00:00.000Z'
+                      resolved_at: null
+                      credit_id: null
+                    - id: 20e9a201-9b22-4768-887b-1b7559b699c6
+                      offer_id: 550e8400-e29b-41d4-a716-446655440001
+                      status: APPROVED
+                      required_actions: []
+                      reviews:
+                      - code: COMPLIANCE_REVIEW_IN_PROGRESS
+                        raised_at: '2025-03-15T11:00:00.000Z'
+                        resolved_at: '2025-03-16T13:00:00.000Z'
+                      rejection_reasons: []
+                      submitted_at: '2025-03-15T10:30:00.000Z'
+                      resolved_at: '2025-03-16T14:00:00.000Z'
+                      credit_id: 20e9a201-9b22-4768-887b-1b7559b699c6
+                with_required_actions:
+                  summary: Application with pending document upload
+                  value:
+                    data:
+                    - id: d91a5f3c-2e84-4b07-a6d9-5c3e1f8b7a24
+                      offer_id: 550e8400-e29b-41d4-a716-446655440002
+                      status: IN_REVIEW
+                      required_actions:
+                      - type: DOCUMENT_UPLOAD
+                        reason: UNRESOLVED_BUSINESS_IDENTITY
+                        requested_at: '2025-04-02T12:00:00.000Z'
+                      reviews:
+                      - code: COMPANY_IDENTIFICATION_PENDING
+                        raised_at: '2025-04-02T12:00:00.000Z'
+                        resolved_at: null
+                      rejection_reasons: []
+                      submitted_at: '2025-04-01T09:00:00.000Z'
+                      resolved_at: null
+                      credit_id: null
+                in_review_internal:
+                  summary: Application under internal review with no merchant action required, mixed open and resolved reviews
+                  value:
+                    data:
+                    - id: 4c7e2b91-8d3f-4a6c-b215-9f0e6d4a1c83
+                      offer_id: 550e8400-e29b-41d4-a716-446655440002
+                      status: IN_REVIEW
+                      required_actions: []
+                      reviews:
+                      - code: COMPLIANCE_REVIEW_IN_PROGRESS
+                        raised_at: '2025-04-01T10:00:00.000Z'
+                        resolved_at: '2025-04-02T11:00:00.000Z'
+                      - code: RISK_REVIEW_IN_PROGRESS
+                        raised_at: '2025-04-02T11:00:00.000Z'
+                        resolved_at: null
+                      rejection_reasons: []
+                      submitted_at: '2025-04-01T09:00:00.000Z'
+                      resolved_at: null
+                      credit_id: null
+                rejected_with_reasons:
+                  summary: Rejected application with rejection reasons and historical review list
+                  value:
+                    data:
+                    - id: a2f6c8e4-5b1d-4e93-9c7a-3d8b0f2e6a17
+                      offer_id: 550e8400-e29b-41d4-a716-446655440003
+                      status: REJECTED
+                      required_actions: []
+                      reviews:
+                      - code: RISK_REVIEW_IN_PROGRESS
+                        raised_at: '2025-03-10T09:00:00.000Z'
+                        resolved_at: '2025-03-11T16:30:00.000Z'
+                      rejection_reasons:
+                      - RISK_REQUIREMENTS_NOT_MET
+                      submitted_at: '2025-03-10T08:00:00.000Z'
+                      resolved_at: '2025-03-11T16:30:00.000Z'
+                      credit_id: null
+                filtered_by_status:
+                  summary: Filtered by IN_REVIEW status
+                  value:
+                    data:
+                    - id: e5b9d3a1-6c2f-4d8e-a417-8b3c5e9f0d66
+                      offer_id: 550e8400-e29b-41d4-a716-446655440002
+                      status: IN_REVIEW
+                      required_actions: []
+                      reviews:
+                      - code: COMPLIANCE_REVIEW_IN_PROGRESS
+                        raised_at: '2025-04-01T10:00:00.000Z'
+                        resolved_at: null
+                      rejection_reasons: []
+                      submitted_at: '2025-04-01T09:00:00.000Z'
+                      resolved_at: null
+                      credit_id: null
+                empty_list:
+                  summary: No applications found
+                  value:
+                    data: []
+        '400':
+          description: The `status` query parameter is not one of the Funding Application statuses.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Type mismatch.
+              examples:
+                unknown_status:
+                  summary: The status filter is not a Funding Application status
+                  value:
+                    code: validation_error
+                    description: Type mismatch.
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

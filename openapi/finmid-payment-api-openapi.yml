@@ -1,0 +1,715 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Payment API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Payment
+paths:
+  /api/v1/capital/payment-batches/{batch_id}:
+    get:
+      tags:
+      - Payment
+      operationId: get-payment-batch
+      summary: Get Payment batch
+      description: 'Retrieve aggregated payment information for a specific payment batch.
+
+
+        For every batch, it is possible to request information about the total batch payment amount and platform commission amount, as well as the payment details for each Funding.
+
+
+        The information is aggregated by `funding_id`, meaning if multiple payments were reported for the same Funding (via Report Payment API), they will be summed together in a single entry.
+
+
+        This endpoint provides visibility into payments that were reported using Report Payment API. Use this data to determine the total amount to collect from your businesses before completing the batch via Report Funds Collection API (platform-funded) or bank transfer (finmid-funded).'
+      parameters:
+      - name: batch_id
+        in: path
+        description: Unique identifier for the specific payment period.
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_\.\-]{1,100}$
+          maxLength: 100
+        example: W4-2020-01
+      responses:
+        '200':
+          description: Aggregated batch payment data.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - batch_id
+                - payment_amount
+                - currency
+                - platform_commission_amount
+                - data
+                properties:
+                  batch_id:
+                    description: Unique identifier for the specific payment period.
+                    type: string
+                  payment_amount:
+                    description: Total payment amount reported for all Fundings in this batch. Sum of all `payment_amount` in the `data` array.
+                    type: number
+                  currency:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/currency/allOf/0'
+                    - description: ISO 4217 currency code.
+                  platform_commission_amount:
+                    description: Total platform commission amount for all Fundings in this batch. Sum of all `platform_commission_amount` in the `data` array.
+                    type: number
+                  data:
+                    type: array
+                    description: Aggregated payment data for each `funding_id` in this batch. If multiple payments were reported for the same Funding, they are summed together.
+                    items:
+                      type: object
+                      required:
+                      - business_id
+                      - funding_id
+                      - payment_amount
+                      - platform_commission_amount
+                      - currency
+                      properties:
+                        business_id:
+                          description: Unique identifier of the Business that owns the Funding.
+                          type: string
+                        funding_id:
+                          description: Unique identifier of the Funding for which payments were reported.
+                          type: string
+                          format: uuid
+                        payment_amount:
+                          description: Total payment amount reported for this Funding in this batch, excluding the `platform_commission_amount`. This is the amount that we expect to receive in transaction to us, with `batch_id` as a payment reference.
+                          type: number
+                        platform_commission_amount:
+                          description: Total platform commission amount for this Funding in this batch. This is the amount that will be kept by you as a commission.
+                          type: number
+                        currency:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/currency/allOf/0'
+                          - description: ISO 4217 currency code in which Business operates.
+              examples:
+                single_funding_payment:
+                  value:
+                    batch_id: W4-2020-01
+                    payment_amount: 1000
+                    platform_commission_amount: 50
+                    data:
+                    - business_id: business-123
+                      funding_id: 00000000-0000-0000-0000-000000000001
+                      payment_amount: 1000
+                      platform_commission_amount: 50
+                multiple_fundings_payment:
+                  value:
+                    batch_id: W4-2020-01
+                    payment_amount: 2500
+                    platform_commission_amount: 125
+                    data:
+                    - business_id: business-123
+                      funding_id: 00000000-0000-0000-0000-000000000001
+                      payment_amount: 1500
+                      platform_commission_amount: 75
+                    - business_id: business-456
+                      funding_id: 00000000-0000-0000-0000-000000000002
+                      payment_amount: 1000
+                      platform_commission_amount: 50
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Batch not found.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - batch_not_found
+                    description:
+                      example: Batch with ID 'W4-2020-01' not found
+              examples:
+                batch_not_found:
+                  value:
+                    code: batch_not_found
+                    description: Batch with ID 'W4-2020-01' not found
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/payment-batches/{batch_id}/incoming-funds:
+    post:
+      tags:
+      - Payment
+      operationId: report-funds-collection
+      summary: Report Funds Collection
+      description: '**Applicable only to platform-funded integrations.** Use this endpoint to notify finmid that you have collected funds from your businesses for a specific batch.
+
+
+        In a platform-funded integration, the platform provides its own capital to businesses while finmid provides the infrastructure (e.g. underwriting model). After reporting collections via Report Payment API or Add Sales Statements API, the platform collects the funds from businesses and then calls this endpoint to confirm the collection.
+
+
+        The `batch_id` must match a batch previously used in Report Payment API or Add Sales Statements API. The `amount` and `currency` should correspond to the total collected for that batch.
+
+
+        > 📘 **Integration models**
+
+        >
+
+        > There are two integration models for handling collections:
+
+        > - **Platform-funded**: The platform provides its own capital. After collecting from businesses, use this endpoint to report the collection to finmid.
+
+        > - **finmid-funded**: finmid provides the capital. After collecting from businesses, the platform sends the funds to finmid''s bank account via bank transfer (simulated via Sales statements batch payment API in sandbox).
+
+
+        ## Typical flow (platform-funded)
+
+
+        1. Report collections using Report Payment API or Add Sales Statements API, grouped by `batch_id`.
+
+        2. Optionally retrieve aggregated batch data using Get Payment Batch API or Get Sales Statements API.
+
+        3. Collect the funds from your businesses.
+
+        4. Call this endpoint to confirm the collection to finmid (using `batch_id`, and `repayment_amount` + `platform_commission_amount` from the 2nd step as the collected `amount`).'
+      parameters:
+      - name: batch_id
+        in: path
+        description: Unique identifier for the specific payment batch.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: W4-2020-01
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - amount
+              - currency
+              - sender
+              - collected_at
+              properties:
+                amount:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                  - description: Amount of the collection funds being reported. Should be equal to the sum of `repayment_amount` and `platform_commission_amount` from the Sales Statements response.
+                    minimum: 100
+                currency:
+                  allOf:
+                  - description: Three-letter currency code (ISO 4217). Supported currencies `EUR`, `GBP`, and `USD`.
+                    type: string
+                    example: EUR
+                  - description: ISO 4217 currency code of the collection funds.
+                sender:
+                  allOf:
+                  - type: object
+                    required:
+                    - name
+                    properties:
+                      name:
+                        type: string
+                        description: Name of the sender.
+                        example: Platform
+                      iban:
+                        type:
+                        - string
+                        - 'null'
+                        description: IBAN of the sender.
+                        example: DE53500105174515729675
+                      bic:
+                        type:
+                        - string
+                        - 'null'
+                        description: BIC of the sender.
+                        example: BICXXX
+                  - description: Details of the sender of the collection funds.
+                collected_at:
+                  allOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:[0-5]\d)$
+                  - description: UTC timestamp when the funds were collected (ISO 8601 datetime).
+                    example: '2024-06-15T10:30:00.000Z'
+                metadata:
+                  type:
+                  - object
+                  - 'null'
+                  description: Contains a set of flexible, custom key-value pairs. Used for sharing extra data.
+                  additionalProperties: true
+                  example:
+                    reference: INV-2024-001
+                    business_id: 802c7f40-b23a-4215-83a1-0bf977d06c27
+            examples:
+              report_funds_collection:
+                value:
+                  amount: 5000
+                  currency: EUR
+                  sender:
+                    name: Platform XYZ
+                    iban: DE89370400440532013000
+                    bic: COBADEFFXXX
+                  collected_at: '2024-06-15T10:30:00.000Z'
+                  metadata:
+                    reference: INV-2024-001
+        required: true
+      responses:
+        '202':
+          description: Collection funds report successfully accepted.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Collection funds data was not provided
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Collection funds data was not provided
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/payment-batches/{batch_id}/payments/{payment_id}:
+    post:
+      tags:
+      - Payment
+      operationId: report-payment
+      summary: Report Payment
+      description: 'Report a payment collection from a Business to finmid, grouped by a specific payment period, market, or another grouping.
+
+
+        Use this endpoint when the platform calculates the collection amounts itself. The currently active Funding for the Business will be automatically identified by finmid. Payments are grouped into batches representing payment periods, with the `batch_id` in the path serving as a payment reference.
+
+
+        The `payment_id` in the path serves as a unique identifier for this payment report and acts as an idempotency key to prevent duplicate submissions.
+
+
+        > 📘 **Alternative: Sales Statements**
+
+        >
+
+        > If you want finmid to calculate the collection amounts for you based on sales data, use Add Sales Statements API instead.
+
+
+        ## After reporting payments
+
+
+        After reporting payments, you can retrieve the aggregated results for a batch using the Get Payment Batch API.
+
+
+        The next step depends on your integration model:
+
+        - **Platform-funded**: Collect the funds from your businesses and then confirm the collection using Report Funds Collection API.
+
+        - **finmid-funded**: Collect the funds from your businesses and send them to finmid''s bank account via bank transfer (simulated via Sales statements batch payment API in sandbox).
+
+
+        ## Appending Payments to a Batch
+
+
+        This API supports multiple submissions for the same `batch_id`. When you call this endpoint multiple times with the same `batch_id`, the reported payment amounts are **appended** to the existing batch, not replaced.
+
+
+        Similarly, if you report multiple payments for the same Business within a batch, all reported amounts will be appended and accumulated for that Business''s active Funding.
+
+
+        > 📘 Example: Incremental Payment Reporting
+
+        >
+
+        > **First API call** (batch_id: `W4-2020-01`, payment_id: `report-1`):
+
+        > ```json
+
+        > {
+
+        > "business_id": "business-123",
+
+        > "payment_amount": 1000.00,
+
+        > "reported_at": "2020-02-10T10:00:00.000Z"
+
+        > }
+
+        > ```
+
+        > **Second API call** (batch_id: `W4-2020-01`, payment_id: `report-2`):
+
+        > ```json
+
+        > {
+
+        > "business_id": "business-123",
+
+        > "payment_amount": 500.00,
+
+        > "reported_at": "2020-02-10T14:00:00.000Z"
+
+        > }
+
+        > ```
+
+        > **Third API call** (batch_id: `W4-2020-01`, payment_id: `report-3`):
+
+        > ```json
+
+        > {
+
+        > "business_id": "business-456",
+
+        > "payment_amount": 800.00,
+
+        > "reported_at": "2020-02-10T16:00:00.000Z"
+
+        > }
+
+        > ```
+
+        > Result: Batch `W4-2020-01` now contains:
+
+        > - `business-123`: **1500.00** (1000.00 + 500.00)
+
+        > - `business-456`: **800.00**'
+      parameters:
+      - name: batch_id
+        in: path
+        description: Unique identifier for the specific payment period. Used as a payment reference.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: W4-2020-01
+      - name: payment_id
+        in: path
+        description: Unique identifier of the payment report. Serves as an idempotency key.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: abc84e32-5725-4078-808a-b15c8cb32bf9
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - business_id
+              - payment_amount
+              - currency
+              - reported_at
+              properties:
+                business_id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                  - description: ID of the Business for which the Payment is being reported. The currently active Funding for this Business will be automatically identified.
+                    example: business-id
+                payment_amount:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                  - description: Amount that is being reported for the payment.
+                    minimum: 0.01
+                currency:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/currency/allOf/0'
+                  - description: ISO 4217 currency code in which Business operates.
+                reported_at:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/collected_at/allOf/0'
+                  - description: UTC timestamp when the payment was reported. ISO 8601 date and time.
+                    example: '2020-02-10T13:42:35.282Z'
+                metadata:
+                  type:
+                  - object
+                  - 'null'
+                  description: Contains a set of flexible, custom key-value pairs. Used for sharing extra data.
+                  additionalProperties: true
+                  example:
+                    purpose: MANUAL_PAYMENT
+            examples:
+              report_payment:
+                value:
+                  business_id: '10'
+                  payment_amount: 1000
+                  currency: EUR
+                  reported_at: '2020-02-10T13:42:35.282Z'
+                  metadata:
+                    transaction_amount: '2000.00'
+              report_manual_payment:
+                value:
+                  business_id: '30'
+                  payment_amount: 500
+                  currency: EUR
+                  reported_at: '2020-02-10T14:00:00.000Z'
+                  metadata:
+                    purpose: MANUAL_PAYMENT
+        required: true
+      responses:
+        '202':
+          description: Payment successfully reported.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Payment data was not provided
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Payment data was not provided
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '409':
+          description: Payment with same ID already reported.
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/transaction:
+    post:
+      tags:
+      - Payment
+      operationId: execute-payment-transaction
+      summary: Execute Payment Transaction
+      description: This API must be implemented by platforms that provide their own capital to businesses.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - idempotency_key
+              - business_id
+              - beneficiary
+              - amount
+              - payment_reference
+              properties:
+                idempotency_key:
+                  type: string
+                  description: 'Unique idempotency key for this transaction request. Composed of the operation key, source ID, and destination ID, separated by dots.
+
+
+                    Format: `<operation_key>.<from_id>.<to_id>`
+
+                    '
+                  example: op-abc123.src-001.dst-002
+                business_id:
+                  type: string
+                  description: 'The platform''s identifier for the business receiving the payout. Provided by finmid so the platform can verify the beneficiary against its own records.
+
+                    '
+                  example: biz-123
+                beneficiary:
+                  allOf:
+                  - type: object
+                    required:
+                    - iban
+                    - name
+                    properties:
+                      iban:
+                        type: string
+                        description: IBAN of the beneficiary.
+                        example: DE89370400440532013000
+                      bic:
+                        type:
+                        - string
+                        - 'null'
+                        description: BIC of the beneficiary.
+                        example: COBADEFFXXX
+                      name:
+                        type: string
+                        description: Full name of the beneficiary.
+                        example: John Doe
+                  - description: Bank account details of the payment beneficiary.
+                amount:
+                  type: object
+                  required:
+                  - value
+                  - currency
+                  description: The payment amount.
+                  properties:
+                    value:
+                      allOf:
+                      - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                      - description: Amount to be transferred.
+                        minimum: 0.01
+                    currency:
+                      allOf:
+                      - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/currency/allOf/0'
+                      - description: ISO 4217 currency code of the payment.
+                payment_reference:
+                  type: string
+                  description: Reference text for the bank transfer. Identifies the purpose of the payment.
+                  example: 'Payment funding #CRD-2026-001'
+            examples:
+              funding_payout:
+                summary: Funding payout to business
+                value:
+                  idempotency_key: op-fund-2026.crd-001.biz-123
+                  business_id: biz-123
+                  beneficiary:
+                    iban: DE89370400440532013000
+                    bic: COBADEFFXXX
+                    name: John Doe
+                  amount:
+                    value: 1500.75
+                    currency: EUR
+                  payment_reference: 'Payment funding #CRD-2026-001'
+        required: true
+      responses:
+        '200':
+          description: Transaction request acknowledged. The platform will process the payment.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  required:
+                  - code
+                  - description
+                  properties:
+                    code:
+                      allOf:
+                      - type: string
+                        enum:
+                        - validation_error
+                        - server_error
+                        - buyer_invalid
+                        - seller_invalid
+                        - platform_invalid
+                        - payment_request_invalid
+                        - line_item_invalid
+                        - buyer_conflict
+                        - seller_conflict
+                        - payment_request_conflict
+                        - business_conflict
+                        - business_not_found
+                        - document_already_exists
+                        - incoming_webhook_conflict
+                        - mcc_not_eligible
+                        - offer_group_not_active
+                        - offer_group_not_found
+                        - platform_check_already_consumed
+                        - platform_check_not_required
+                        - platform_check_unavailable
+                        - platform_checks_not_enabled
+                      - description: Code that represents the kind of error.
+                    description:
+                      allOf:
+                      - type: string
+                      - description: A more detailed description of the error.
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Invalid beneficiary IBAN
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Invalid beneficiary IBAN
+        '401':
+          description: 'Signature verification failed. Possible reasons:
+
+            - Invalid or missing `Signature` or `Signature-Input` headers.
+
+            - `Content-Digest` does not match the request body.
+
+            - Signature has expired (`created`/`expires` validation failed).
+
+            - `nonce` has already been used (replay attack detected).
+
+            - Unknown `keyid` or request from a non-whitelisted IP.
+
+            '
+        '409':
+          description: Transaction with the same idempotency key already processed.
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

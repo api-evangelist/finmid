@@ -1,0 +1,800 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Funding API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Funding
+paths:
+  /api/v1/capital/businesses/{business_id}/credits:
+    get:
+      tags:
+      - Funding
+      operationId: get-fundings-for-business
+      summary: Get Fundings
+      description: 'The endpoint provides information about the Funding of the Business.
+
+
+        Depending on the presence and status of the current Funding, Platforms can communicate different details to the Business in their UI.
+
+
+        > 📘
+
+        >
+
+        > finmid API supports `capital_funding.created` webhook to communicate when an Offer was accepted by a business and a Funding was created.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - name: statuses
+        in: query
+        description: Filter for status of the Funding.
+        required: false
+        schema:
+          type: array
+          items:
+            description: Status of the Funding.
+            type: string
+            enum:
+            - PENDING
+            - PAID
+            - REFINANCED
+            - REJECTED
+            - CANCELLED
+            - DEFAULTED
+        example:
+        - PENDING
+        - PAID
+      responses:
+        '200':
+          description: List of Fundings ordered by `accepted_at` in descending order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    description: List of Fundings.
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - business_id
+                      - limit
+                      - fee
+                      - payment_type
+                      - repaid_amount
+                      - total_amount_paid
+                      - total_amount_reconciled
+                      - currency
+                      - country
+                      - accepted_at
+                      - due_at
+                      - paid_at
+                      - estimated_payoff_months
+                      - status
+                      - payout_amount
+                      properties:
+                        id:
+                          description: Unique identifier of the Funding.
+                          type: string
+                          format: uuid
+                          example: 20e9a201-9b22-4768-887b-1b7559b699c6
+                        business_id:
+                          description: Identifier of the Business to which this Funding belongs.
+                          example: business-id
+                          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                        limit:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: Funding limit.
+                            example: 1000
+                        fee:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: The total cost of the funding for the business.
+                            example: 100
+                        repayment_percent:
+                          deprecated: true
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: Payment percentage. Deprecated, use `payment_percentage` instead.
+                            example: 15
+                        payment_percentage:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: 'Payment percentage. Percentage of the sales amount that will be deducted from the business''s sales.
+
+
+                              Only applicable to `FLEXIBLE` `payment_type`.
+
+                              '
+                            example: 15
+                        payment_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: 'Payment amount. Amount which business keeps paying for their funding on `payment_frequency` basis.
+
+
+                              Only applicable to `FIXED` `payment_type`.
+
+                              '
+                            example: 200
+                        payment_frequency:
+                          description: 'Frequency in which business keeps paying a fixed amount (`payment_amount`) for their funding.
+
+                            For instance, 200 EUR / week.
+
+
+                            Only applicable to `FIXED` `payment_type`.
+
+                            '
+                          type: string
+                          enum:
+                          - WEEKLY
+                          - MONTHLY
+                          example: WEEKLY
+                        payment_type:
+                          description: 'Payment type is defining the way business pays for their funding.
+
+
+                            - `FLEXIBLE` means a percentage (`payment_percentage`) of their sales.
+
+                            - `FIXED` means a fixed amount (`payment_amount`) at a certain frequency (`payment_frequency`).
+
+                            '
+                          type: string
+                          enum:
+                          - FIXED
+                          - FLEXIBLE
+                          example: FLEXIBLE
+                        repaid_amount:
+                          deprecated: true
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: Paid amount. Deprecated, use `total_amount_paid` instead.
+                            example: 123.45
+                        total_amount_paid:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: The amount, that has already been deducted from business for this funding. Can be higher than `total_amount_reconciled`.
+                            example: 123.45
+                        total_amount_reconciled:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: The amount, that has already been deducted from the business and reconciled by Finmid.
+                            example: 110.5
+                        currency:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/currency/allOf/0'
+                          - description: Three-letter currency code (ISO 4217).
+                        country:
+                          allOf:
+                          - description: Country code (ISO 3166-1 alpha-3, e.g. `DEU`, `USA`).
+                            type: string
+                            example: DEU
+                            enum:
+                            - ABW
+                            - AFG
+                            - AGO
+                            - AIA
+                            - ALA
+                            - ALB
+                            - AND
+                            - ARE
+                            - ARG
+                            - ARM
+                            - ASM
+                            - ATA
+                            - ATF
+                            - ATG
+                            - AUS
+                            - AUT
+                            - AZE
+                            - BDI
+                            - BEL
+                            - BEN
+                            - BES
+                            - BFA
+                            - BGD
+                            - BGR
+                            - BHR
+                            - BHS
+                            - BIH
+                            - BLM
+                            - BLR
+                            - BLZ
+                            - BMU
+                            - BOL
+                            - BRA
+                            - BRB
+                            - BRN
+                            - BTN
+                            - BVT
+                            - BWA
+                            - CAF
+                            - CAN
+                            - CCK
+                            - CHE
+                            - CHL
+                            - CHN
+                            - CIV
+                            - CMR
+                            - COD
+                            - COG
+                            - COK
+                            - COL
+                            - COM
+                            - CPV
+                            - CRI
+                            - CUB
+                            - CUW
+                            - CXR
+                            - CYM
+                            - CYP
+                            - CZE
+                            - DEU
+                            - DJI
+                            - DMA
+                            - DNK
+                            - DOM
+                            - DZA
+                            - ECU
+                            - EGY
+                            - ERI
+                            - ESH
+                            - ESP
+                            - EST
+                            - ETH
+                            - FIN
+                            - FJI
+                            - FLK
+                            - FRA
+                            - FRO
+                            - FSM
+                            - GAB
+                            - GBR
+                            - GEO
+                            - GGY
+                            - GHA
+                            - GIB
+                            - GIN
+                            - GLP
+                            - GMB
+                            - GNB
+                            - GNQ
+                            - GRC
+                            - GRD
+                            - GRL
+                            - GTM
+                            - GUF
+                            - GUM
+                            - GUY
+                            - HKG
+                            - HMD
+                            - HND
+                            - HRV
+                            - HTI
+                            - HUN
+                            - IDN
+                            - IMN
+                            - IND
+                            - IOT
+                            - IRL
+                            - IRN
+                            - IRQ
+                            - ISL
+                            - ISR
+                            - ITA
+                            - JAM
+                            - JEY
+                            - JOR
+                            - JPN
+                            - KAZ
+                            - KEN
+                            - KGZ
+                            - KHM
+                            - KIR
+                            - KNA
+                            - KOR
+                            - KWT
+                            - LAO
+                            - LBN
+                            - LBR
+                            - LBY
+                            - LCA
+                            - LIE
+                            - LKA
+                            - LSO
+                            - LTU
+                            - LUX
+                            - LVA
+                            - MAC
+                            - MAF
+                            - MAR
+                            - MCO
+                            - MDA
+                            - MDG
+                            - MDV
+                            - MEX
+                            - MHL
+                            - MKD
+                            - MLI
+                            - MLT
+                            - MMR
+                            - MNE
+                            - MNG
+                            - MNP
+                            - MOZ
+                            - MRT
+                            - MSR
+                            - MTQ
+                            - MUS
+                            - MWI
+                            - MYS
+                            - MYT
+                            - NAM
+                            - NCL
+                            - NER
+                            - NFK
+                            - NGA
+                            - NIC
+                            - NIU
+                            - NLD
+                            - NOR
+                            - NPL
+                            - NRU
+                            - NZL
+                            - OMN
+                            - PAK
+                            - PAN
+                            - PCN
+                            - PER
+                            - PHL
+                            - PLW
+                            - PNG
+                            - POL
+                            - PRI
+                            - PRK
+                            - PRT
+                            - PRY
+                            - PSE
+                            - PYF
+                            - QAT
+                            - REU
+                            - ROU
+                            - RUS
+                            - RWA
+                            - SAU
+                            - SDN
+                            - SEN
+                            - SGP
+                            - SGS
+                            - SHN
+                            - SJM
+                            - SLB
+                            - SLE
+                            - SLV
+                            - SMR
+                            - SOM
+                            - SPM
+                            - SRB
+                            - SSD
+                            - STP
+                            - SUR
+                            - SVK
+                            - SVN
+                            - SWE
+                            - SWZ
+                            - SXM
+                            - SYC
+                            - SYR
+                            - TCA
+                            - TCD
+                            - TGO
+                            - THA
+                            - TJK
+                            - TKL
+                            - TKM
+                            - TLS
+                            - TON
+                            - TTO
+                            - TUN
+                            - TUR
+                            - TUV
+                            - TWN
+                            - TZA
+                            - UGA
+                            - UKR
+                            - UMI
+                            - URY
+                            - USA
+                            - UZB
+                            - VAT
+                            - VCT
+                            - VEN
+                            - VGB
+                            - VIR
+                            - VNM
+                            - VUT
+                            - WLF
+                            - WSM
+                            - YEM
+                            - ZAF
+                            - ZMB
+                            - ZWE
+                            - XKX
+                          - description: Country in which the Business operates (ISO 3166-1 alpha-3, e.g. DEU).
+                        estimated_payoff_months:
+                          description: Estimated months until the Funding is fully paid.
+                          example: 6
+                          type: integer
+                          format: int32
+                        accepted_at:
+                          description: Timestamp in UTC when the Funding offer was accepted (ISO 8601 datetime).
+                          type: string
+                          format: date-time
+                          example: '2024-01-01T00:00:00.000Z'
+                        due_at:
+                          description: Timestamp in UTC when the Funding is expected to be paid (ISO 8601 datetime).
+                          type: string
+                          format: date-time
+                          example: '2025-01-01T00:00:00.000Z'
+                        paid_at:
+                          description: Timestamp in UTC when the Funding was completely paid by business (ISO 8601 datetime).
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          example: '2025-11-01T00:00:00.000Z'
+                        paid_out_at:
+                          description: Timestamp in UTC when the Funding was paid out to the merchant (ISO 8601 datetime).
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          example: '2024-01-02T00:00:00.000Z'
+                        status:
+                          description: 'Status of the Funding.
+
+
+                            - `PENDING`: funding has been accepted and is being repaid.
+
+                            - `PAID`: funding has already been repaid.
+
+                            - `REFINANCED` : funding has been refinanced. This means the new funding with higher limit has been accepted and this funding has been closed.
+
+                            - `REJECTED` : funding payout has been rejected due to failed KYB check.
+
+                            - `CANCELLED`: funding has been cancelled before being paid out.
+
+                            - `DEFAULTED`: funding has been terminated before full repayment due to insolvency.
+
+                            '
+                          type: string
+                          enum:
+                          - PENDING
+                          - PAID
+                          - REFINANCED
+                          - REJECTED
+                          - CANCELLED
+                          - DEFAULTED
+                          example: PENDING
+                        payout_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: The amount of money that business will receive on its bank account as payout for this funding.
+                            example: 1000
+              examples:
+                fundings_list:
+                  value:
+                    data:
+                    - id: 00000000-0000-0000-0000-000000000002
+                      business_id: business-id
+                      limit: 2000
+                      fee: 200
+                      repayment_percent: 15
+                      payment_percentage: 15
+                      repaid_amount: 2200
+                      total_amount_paid: 2200
+                      total_amount_reconciled: 2000
+                      currency: EUR
+                      country: DEU
+                      accepted_at: '2024-01-01T00:00:00.000Z'
+                      due_at: '2025-01-01T00:00:00.000Z'
+                      paid_at: '2024-08-15T00:00:00.000Z'
+                      estimated_payoff_months: 7
+                      status: PAID
+                    - id: 00000000-0000-0000-0000-000000000001
+                      business_id: business-id
+                      limit: 1000
+                      fee: 100
+                      repayment_percent: 15
+                      payment_percentage: 15
+                      repaid_amount: 0
+                      total_amount_paid: 0
+                      total_amount_reconciled: 0
+                      currency: EUR
+                      country: DEU
+                      accepted_at: '2024-09-01T00:00:00.000Z'
+                      due_at: '2025-09-01T00:00:00.000Z'
+                      paid_at: null
+                      estimated_payoff_months: 3
+                      status: PENDING
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v1/capital/credits/{credit_id}/payments:
+    get:
+      tags:
+      - Funding
+      operationId: get-payments-for-credit
+      summary: Get Funding payments
+      description: 'Retrieve all payments for a specific Funding.
+
+
+        See also:
+
+        - `payment.scheduled` webhook
+
+        - `payment.completed` webhook
+
+        - `payment.failed` webhook
+
+        - `payment.cancelled` webhook'
+      parameters:
+      - name: credit_id
+        in: path
+        description: Identifier of the Funding.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 20e9a201-9b22-4768-887b-1b7559b699c6
+      responses:
+        '200':
+          description: List of Funding payments ordered by `scheduled_at`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    description: List of Funding payments.
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - status
+                      - repayment_amount
+                      - scheduled_at
+                      - expected_at
+                      - completed_at
+                      - sales_amount
+                      properties:
+                        id:
+                          description: Unique identifier of the payment.
+                          type: string
+                          example: 25-08-abcde
+                        status:
+                          description: 'Status of the Funding payment.
+
+
+                            - `PENDING`: Payment is not yet processed (it may have left the Business’s bank account but has not been confirmed as received by our system).
+
+                            - `COMPLETED`: Payment has been successfully received and processed.
+
+                            - `FAILED` : Payment either failed or was revoked by the Business.
+
+                            '
+                          type: string
+                          enum:
+                          - PENDING
+                          - COMPLETED
+                          - FAILED
+                          - CANCELLED
+                          example: PENDING
+                        repayment_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: The amount that is going to be debited from the Business bank account.
+                            example: 150
+                        scheduled_at:
+                          description: Date when Payment is planned to be debited from the Business bank account.
+                          type: string
+                          format: date
+                          example: '2025-08-15'
+                        cancelled_at:
+                          description: Date when Payment was cancelled.
+                          type:
+                          - string
+                          - 'null'
+                          format: date
+                          example: '2025-08-15'
+                        expected_at:
+                          description: Date when Payment is expected to be received, processed and reflected on the Funding outstanding amount. Not null value means that Payment collection has already been scheduled with the bank.
+                          type:
+                          - string
+                          - 'null'
+                          format: date
+                          example: '2025-08-17'
+                        completed_at:
+                          description: Date when Payment was processed and reflected on the Funding outstanding amount.
+                          type:
+                          - string
+                          - 'null'
+                          format: date
+                          example: '2025-08-17'
+                        sales_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                          - description: Sales used to calculate the repayment amount. Not null only for Fundings with FLEXIBLE repayment type.
+                            example: 1000
+                        partial_payments:
+                          description: A single payment may be received partly in multiple portions. This field represents all portions that were paid for a specific payment. I.e. payment amount is 1000 and we received only 200 and 700 so far. This field can be null if the payment was received in full as single transaction or if no payment has been received yet.
+                          type:
+                          - array
+                          - 'null'
+                          items:
+                            type: object
+                            required:
+                            - amount
+                            - reconciled_at
+                            properties:
+                              amount:
+                                allOf:
+                                - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                                - description: The partial payment amount.
+                                  example: 75
+                              reconciled_at:
+                                description: Timestamp when the partial payment was reconciled (ISO 8601 datetime).
+                                type: string
+                                format: date-time
+                                example: '2025-08-16T14:30:00Z'
+              examples:
+                funding_payments:
+                  value:
+                    data:
+                    - id: 25-08-abcde
+                      status: COMPLETED
+                      repayment_amount: 200
+                      scheduled_at: '2025-08-15'
+                      expected_at: '2025-08-18'
+                      completed_at: '2025-08-18'
+                      sales_amount: null
+                      partial_payments:
+                      - amount: 75
+                        reconciled_at: '2025-08-16T14:30:00Z'
+                      - amount: 125
+                        reconciled_at: '2025-08-17T09:15:00Z'
+                    - id: 25-09-abcde
+                      status: FAILED
+                      repayment_amount: 200
+                      scheduled_at: '2025-09-15'
+                      expected_at: '2025-09-17'
+                      completed_at: null
+                      sales_amount: null
+                      partial_payments: null
+                    - id: 25-10-abcde
+                      status: PENDING
+                      repayment_amount: 200
+                      scheduled_at: '2025-10-15'
+                      expected_at: '2025-10-17'
+                      completed_at: null
+                      sales_amount: null
+                      partial_payments: null
+                    - id: 25-11-abcde
+                      status: PENDING
+                      repayment_amount: 200
+                      scheduled_at: '2025-11-15'
+                      expected_at: null
+                      completed_at: null
+                      sales_amount: null
+                      partial_payments: null
+                    - id: 25-12-abcde
+                      status: PENDING
+                      repayment_amount: 200
+                      scheduled_at: '2025-12-15'
+                      expected_at: null
+                      completed_at: null
+                      cancelled_at: '2025-12-15'
+                      sales_amount: null
+                      partial_payments: null
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: Funding not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - credit_not_found
+                    description:
+                      example: Credit with id '20e9a201-9b22-4768-887b-1b7559b699c6' not found
+              examples:
+                funding_not_found:
+                  value:
+                    code: credit_not_found
+                    description: Credit with id '20e9a201-9b22-4768-887b-1b7559b699c6' not found
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

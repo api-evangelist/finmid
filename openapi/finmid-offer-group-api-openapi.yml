@@ -1,0 +1,879 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Offer Group API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Offer Group
+paths:
+  /api/v1/capital/businesses/{business_id}/offers/{offer_group_id}/platform-checks:
+    post:
+      tags:
+      - Offer Group
+      operationId: report-platform-check
+      summary: Report Platform Check
+      description: '> ⚠️ This API is relevant only for platforms that provide their own capital to businesses.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1offers~1{offer_group_id}~1signature-link/post/parameters/1'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - check_type
+              - outcome
+              properties:
+                check_type:
+                  type: string
+                  description: 'The check your platform ran on the Business.
+
+
+                    - `INVENTORY`: an inventory check of the Business.
+
+                    '
+                  enum:
+                  - INVENTORY
+                  example: INVENTORY
+                outcome:
+                  type: string
+                  description: 'The outcome of the check.
+
+
+                    - `APPROVED`: the Business passed the check.
+
+                    - `REJECTED`: the Business did not pass the check. finmid does not pay out a Funding from this Offer Group.
+
+                    '
+                  enum:
+                  - APPROVED
+                  - REJECTED
+                  example: APPROVED
+                rejection_reason:
+                  type:
+                  - string
+                  - 'null'
+                  description: Why the Business did not pass the check. Required, and not blank, when `outcome` is `REJECTED`; ignored when `outcome` is `APPROVED`. finmid does not show it to the Business.
+                  example: Inventory below the platform's threshold
+            examples:
+              approved:
+                summary: The Business passed the check
+                value:
+                  check_type: INVENTORY
+                  outcome: APPROVED
+              rejected:
+                summary: The Business did not pass the check
+                value:
+                  check_type: INVENTORY
+                  outcome: REJECTED
+                  rejection_reason: Inventory below the platform's threshold
+      responses:
+        '204':
+          description: 'Outcome reported. No response body.
+
+
+            Also returned when you send again the `REJECTED` that withdrew the Offer Group: nothing changes.
+
+            '
+        '400':
+          description: Validation error. Nothing is stored.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                missing_field:
+                  summary: A required field is missing
+                  value:
+                    code: validation_error
+                    description: 'Missing mandatory field(s): outcome'
+                unknown_value:
+                  summary: A value is not one of the listed ones
+                  value:
+                    code: validation_error
+                    description: 'Malformed payload for field: check_type'
+                missing_rejection_reason:
+                  summary: The outcome is REJECTED and rejection_reason is missing or blank
+                  value:
+                    code: validation_error
+                    description: rejection_reason is required when the outcome is REJECTED
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '403':
+          description: Platform checks are not enabled for your platform. Nothing is stored.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - platform_checks_not_enabled
+              examples:
+                platform_checks_not_enabled:
+                  summary: Platform checks are not enabled for your platform
+                  value:
+                    code: platform_checks_not_enabled
+                    description: Platform checks are not enabled for this platform
+        '404':
+          description: The Business, or its Offer Group, does not exist.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - business_not_found
+                      - offer_group_not_found
+              examples:
+                business_not_found:
+                  summary: No Business with this business_id exists on your platform
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+                offer_group_not_found:
+                  summary: The Business has no Offer Group with this offer_group_id
+                  value:
+                    code: offer_group_not_found
+                    description: Offer group with id '70170884-67ef-427a-b7cf-912647c09a56' not found
+        '409':
+          description: The outcome can no longer be applied.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - offer_group_not_active
+                      - platform_check_already_consumed
+              examples:
+                offer_group_not_active:
+                  summary: No Offer was accepted, and the Offer Group has expired, was replaced or was withdrawn
+                  value:
+                    code: offer_group_not_active
+                    description: Offer group with id '70170884-67ef-427a-b7cf-912647c09a56' has expired, or was replaced or withdrawn
+                platform_check_already_consumed:
+                  summary: An Offer was accepted, and the review of the Funding Application has already used an outcome or has ended
+                  value:
+                    code: platform_check_already_consumed
+                    description: The screening of the accepted offer has already consumed a platform check
+        '422':
+          description: The review of the Funding Application runs without a platform check. The outcome is not applied.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - platform_check_not_required
+              examples:
+                platform_check_not_required:
+                  summary: An Offer was accepted, and the review of the Funding Application runs without a platform check
+                  value:
+                    code: platform_check_not_required
+                    description: The screening of the accepted offer requires no platform check
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+        '503':
+          description: finmid could not confirm that it recorded the outcome. Retry later.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - platform_check_unavailable
+              examples:
+                platform_check_unavailable:
+                  summary: finmid could not confirm that it recorded the outcome
+                  value:
+                    code: platform_check_unavailable
+                    description: The platform check could not be recorded, retry later
+  /api/v1/capital/businesses/{business_id}/offers/{offer_group_id}/signature-link:
+    post:
+      tags:
+      - Offer Group
+      operationId: create-signature-link
+      summary: Create Signature Link
+      description: 'Returns a link that opens finmid''s signature screen for one Offer. Use it when your platform shows the Offers in its own UI.
+
+
+        The Business always accepts an Offer in finmid''s iframe. With this link the iframe skips the offer overview and opens a single screen to accept the Offer you pass in `offer_id`. The screen does not repeat the terms of the Offer, so show them in your UI. It asks for the use of funds when you do not send them.
+
+
+        ## The flow
+
+
+        1. When you show the Offers to the Business, fetch them with Get Active Offer Group without `suppress_offer_opened_event=true`. With your own UI, that call is what records that the Business opened the Offers: the first such call for an Offer Group triggers `capital_offer.opened`.
+
+        2. When the Business picks an Offer in your UI, call this endpoint with the `offer_group_id` and the `offer_id` of that Offer.
+
+        3. Open the returned `url` in an iframe or in a mobile webview before `valid_until`.
+
+        4. When the Business accepts the Offer, the iframe sends the message `{ "type": "OFFER_ACCEPTED" }`. finmid sends it with `window.parent.postMessage` to the origin configured for your platform (contact finmid to configure it), and in mobile webviews through `window.finmidBridge` (Android) and `window.webkit.messageHandlers.finmidBridge` (iOS). finmid then sends `capital_offer.accepted`.
+
+
+        Neither calling this endpoint nor opening the returned `url` counts as the Business opening the Offers: neither triggers `capital_offer.opened`.
+
+
+        Every call returns a new link. A link can stop working before its `valid_until`, for example when finmid replaces the Offer Group: fetch the current Offer Group with Get Active Offer Group and call this endpoint again.
+
+
+        ## Errors
+
+
+        | Status | `code` | When | What to do |
+
+        |---|---|---|---|
+
+        | `400` | `validation_error` | `offer_id` is missing, a value of `use_of_funds` is not one of the listed ones, `use_of_funds` contains `OTHER` without `use_of_funds_comment`, `use_of_funds_comment` is longer than 500 characters, or `offer_group_id` is not a UUID. | Fix the request. |
+
+        | `401` | | The API key is missing or invalid. | Check the `X-API-Key` header. |
+
+        | `404` | `business_not_found` | No Business with this `business_id` exists on your platform. | Check the `business_id`. |
+
+        | `404` | `offer_group_not_found` | The Business has no Offer Group with this `offer_group_id`. | Use the `id` of the Offer Group returned by Get Active Offer Group. |
+
+        | `404` | `offer_not_found` | The Offer Group has no Offer with this `offer_id`. | Use an `id` from `flexible_offers` or `fixed_offers` of the same Offer Group. |
+
+        | `409` | `business_details_incomplete` | The Business has no valid bank account number or phone number. In the same case Get current Offer returns no `embedding_link` URL. | Complete the bank account and the phone number of the Business. |
+
+        | `409` | `offer_group_not_active` | The Offer Group has expired, was replaced by a new Offer Group, was withdrawn, or the Business already accepted one of its Offers. | Fetch the current Offer Group with Get Active Offer Group. |
+
+        | `500` | `server_error` | An unexpected error occurred. | Retry later. |'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - name: offer_group_id
+        in: path
+        required: true
+        description: Identifier of the Offer Group, as received in `capital_offer.created`.
+        schema:
+          type: string
+          format: uuid
+        example: 70170884-67ef-427a-b7cf-912647c09a56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - offer_id
+              properties:
+                offer_id:
+                  type: string
+                  format: uuid
+                  description: Identifier of the Offer the Business picked in your UI. Use an `id` from `flexible_offers` or `fixed_offers` of the Offer Group returned by [Get Active Offer Group](./get-active-offer-group).
+                  example: 550e8400-e29b-41d4-a716-446655440002
+                use_of_funds:
+                  type: array
+                  uniqueItems: true
+                  description: 'What the Business will use the Funding for, when you ask the Business in your UI.
+
+
+                    - If you send at least one value, the signature screen does not ask the Business for the use of funds.
+
+                    - If you send none, the signature screen asks the Business. For the `CSP` financing setup the Business has to choose at least one before accepting.
+
+
+                    Values:
+
+
+                    - `NEW_EQUIPMENT`: new equipment.
+
+                    - `RENOVATIONS`: renovations.
+
+                    - `NEW_VENUE`: a new venue.
+
+                    - `MARKETING`: marketing.
+
+                    - `BILLS`: bills.
+
+                    - `OTHER`: another use, described in `use_of_funds_comment`.
+
+                    '
+                  items:
+                    type: string
+                    enum:
+                    - NEW_EQUIPMENT
+                    - RENOVATIONS
+                    - NEW_VENUE
+                    - MARKETING
+                    - BILLS
+                    - OTHER
+                  example:
+                  - RENOVATIONS
+                  - OTHER
+                use_of_funds_comment:
+                  type:
+                  - string
+                  - 'null'
+                  maxLength: 500
+                  description: Describes the `OTHER` use of funds, up to 500 characters. Required, and not blank, when `use_of_funds` contains `OTHER`. Without `OTHER` it is left out of the link, but a comment longer than 500 characters still answers `400 validation_error`.
+                  example: New coffee machine
+                auth_context:
+                  $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1offers~1current/get/parameters/1/schema'
+            examples:
+              signature_screen_asks_use_of_funds:
+                summary: The signature screen asks the Business for the use of funds
+                value:
+                  offer_id: 550e8400-e29b-41d4-a716-446655440002
+              use_of_funds_from_your_ui:
+                summary: You collected the use of funds in your UI
+                value:
+                  offer_id: 550e8400-e29b-41d4-a716-446655440002
+                  use_of_funds:
+                  - RENOVATIONS
+                  - OTHER
+                  use_of_funds_comment: New coffee machine
+                  auth_context: VERIFIED
+      responses:
+        '200':
+          description: Link to the signature screen of the Offer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - url
+                - valid_until
+                properties:
+                  url:
+                    type: string
+                    description: 'Link that opens finmid''s signature screen for the Offer. Open it as it is, and reload it with the same query string: without its query parameters the iframe opens the full offer journey instead.
+
+
+                      Treat it as a credential: it opens the Business''s session in finmid''s iframe. Do not log it, store it, or send it by email or message.
+
+                      '
+                    example: https://capital.example.com?c=DEU&t=eyJhbGciOiJIUzI1NiJ9.example&f=SIGNATURE&offer_id=550e8400-e29b-41d4-a716-446655440002
+                  valid_until:
+                    type: string
+                    format: date-time
+                    description: 'Latest moment in UTC at which the Business can accept the Offer through this link: the `expires_at` of the Offer Group (ISO 8601 datetime). The link stops working earlier if the Offer Group is replaced or withdrawn, or one of its Offers is accepted.
+
+                      '
+                    example: '2026-11-08T09:14:31.482Z'
+              examples:
+                signature_link:
+                  summary: Link to the signature screen of the Offer
+                  value:
+                    url: https://capital.example.com?c=DEU&t=eyJhbGciOiJIUzI1NiJ9.example&f=SIGNATURE&offer_id=550e8400-e29b-41d4-a716-446655440002
+                    valid_until: '2026-11-08T09:14:31.482Z'
+                signature_link_with_use_of_funds:
+                  summary: Link that carries the use of funds you collected
+                  value:
+                    url: https://capital.example.com?c=DEU&t=eyJhbGciOiJIUzI1NiJ9.example&f=SIGNATURE&offer_id=550e8400-e29b-41d4-a716-446655440002&use_of_funds=RENOVATIONS%2COTHER&use_of_funds_comment=New+coffee+machine
+                    valid_until: '2026-11-08T09:14:31.482Z'
+        '400':
+          description: Validation error. No link is created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+              examples:
+                missing_field:
+                  summary: A required field is missing
+                  value:
+                    code: validation_error
+                    description: 'Missing mandatory field(s): offer_id'
+                unknown_value:
+                  summary: A value is not one of the listed ones
+                  value:
+                    code: validation_error
+                    description: 'Malformed payload for field: use_of_funds'
+                missing_use_of_funds_comment:
+                  summary: use_of_funds contains OTHER and use_of_funds_comment is missing or blank
+                  value:
+                    code: validation_error
+                    description: use_of_funds_comment is required when use_of_funds contains OTHER
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          description: The Business, its Offer Group, or the Offer does not exist.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - business_not_found
+                      - offer_group_not_found
+                      - offer_not_found
+              examples:
+                business_not_found:
+                  summary: No Business with this business_id exists on your platform
+                  value:
+                    code: business_not_found
+                    description: Business with id 'business-id' not found
+                offer_group_not_found:
+                  summary: The Business has no Offer Group with this offer_group_id
+                  value:
+                    code: offer_group_not_found
+                    description: Offer group with id '70170884-67ef-427a-b7cf-912647c09a56' not found
+                offer_not_found:
+                  summary: The Offer Group has no Offer with this offer_id
+                  value:
+                    code: offer_not_found
+                    description: Offer with id '550e8400-e29b-41d4-a716-446655440002' not found in offer group '70170884-67ef-427a-b7cf-912647c09a56'
+        '409':
+          description: The Business cannot accept an Offer of this Offer Group.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - business_details_incomplete
+                      - offer_group_not_active
+              examples:
+                business_details_incomplete:
+                  summary: The Business has no valid bank account number or phone number
+                  value:
+                    code: business_details_incomplete
+                    description: Business with id 'business-id' has no valid bank account number or phone number
+                offer_group_not_active:
+                  summary: The Offer Group has expired, was replaced or withdrawn, or one of its Offers was accepted
+                  value:
+                    code: offer_group_not_active
+                    description: Offer group with id '70170884-67ef-427a-b7cf-912647c09a56' has expired, was replaced or withdrawn, or one of its offers was accepted
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+  /api/v2/capital/businesses/{business_id}/offers/active:
+    get:
+      tags:
+      - Offer Group
+      operationId: get-active-offer-group
+      summary: Get Active Offer Group
+      description: 'This endpoint returns the currently active Offer Group for a Business that can be accepted.
+
+
+        An Offer Group contains multiple offers of the same type from which the Business can choose exactly one to accept. The type of offers (flexible or fixed) is determined by the financing setup and agreements between finmid and the Platform. If no active Offer Group exists, the `offer_group` field will be `null`, indicating the Business is currently not eligible for funding.
+
+
+        **Flexible Offers** define payment as a percentage of the Business''s sales revenue.
+
+
+        **Fixed Offers** define payment as a fixed amount paid at a regular frequency (`WEEKLY` or `MONTHLY`).
+
+
+        ### Determining available ranges
+
+
+        Each offer in the group represents one selectable combination of payout amount and payment period. The offers are sorted in ascending order, so you can derive the available ranges from the array:
+
+
+        - **Payout amount range** — the `payout_amount` of the first offer is the minimum; the last offer is the maximum.
+
+        - **Payment period range** — the `payment_estimated_months` of the first offer is the minimum; the last offer is the maximum.
+
+
+        These ranges can be used, for example, to populate sliders or input constraints in a UI before the Business selects a specific offer to accept.
+
+
+        ### Calling this endpoint counts as the Business opening the offers
+
+
+        > 🚧 This endpoint is primarily intended for Platforms that build their own Capital UI. Call it (with default parameters) **only at the moment the Business is actually shown the offers**.
+
+        >
+
+        > The first such call marks the Offer Group as opened by the Business: it triggers the `capital_offer.opened` webhook and feeds finmid''s offer analytics (e.g. open rate). If you call this endpoint for any other purpose, i.e. fetching extra offer data for internal processing, background jobs or monitoring - set `suppress_offer_opened_event=true` to prevent the Offer Group from being incorrectly reported as seen by the Business and to ensure the accuracy of open-rate analytics.
+
+
+        > Related webhooks:
+
+        > - `capital_offer.created` to communicate when a new Offer Group is available for the Business
+
+        > - `capital_offer.opened` is triggered when Offer Group is first seen by the Business. This occurs either when our iframe is displayed to the business or when a specific Offer Group is retrieved for the very first time via the public-api endpoint. In case of the public-api endpoint, the `suppress_offer_opened_event` parameter must be omitted or explicitly set to `false`.
+
+        > - `capital_offer.expired` to communicate when an Offer Group has expired
+
+        > - `capital_offer.withdrawn` to communicate when an Offer Group was withdrawn because of an outcome the platform reported'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - name: suppress_offer_opened_event
+        in: query
+        required: false
+        description: 'When `true`, the call is not recorded as the Business opening the offers: the `capital_offer.opened` webhook is not triggered and the call is excluded from offer analytics (e.g. open rate).
+
+
+          Keep the default (`false`) only when the returned offers are displayed to the Business. Set it to `true` whenever you fetch the Offer Group for any other purpose, so the analytics reflect what the Business actually saw.
+
+          '
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: Active Offer Group for this Business, or `null` if no active offers are available.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - offer_group
+                properties:
+                  offer_group:
+                    type:
+                    - object
+                    - 'null'
+                    description: 'The currently active Offer Group that can be accepted by the Business.
+
+
+                      `null` if no active offers are available, meaning the Business is currently not eligible for funding.
+
+                      '
+                    required:
+                    - id
+                    - expires_at
+                    - currency
+                    - contract
+                    - payment
+                    - flexible_offers
+                    - fixed_offers
+                    properties:
+                      id:
+                        description: Unique identifier of the Offer Group.
+                        type: string
+                        format: uuid
+                        example: ab0e8400-e29b-41d4-a716-446655440001
+                      expires_at:
+                        description: Timestamp in UTC when the Offer Group expires and can no longer be accepted (ISO 8601 datetime).
+                        type: string
+                        format: date-time
+                        example: '2025-01-15T23:59:59Z'
+                      currency:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}~1incoming-funds/post/requestBody/content/application~1json/schema/properties/currency/allOf/0'
+                        - description: Three-letter currency code (ISO 4217) for all offers in this group.
+                          example: EUR
+                      contract:
+                        type: object
+                        description: Contract details that apply to all offers in this group.
+                        required:
+                        - financing_setup
+                        - contract_date
+                        - contract_version
+                        properties:
+                          financing_setup:
+                            description: 'The financing setup type for this contract.
+
+
+                              - `MCA`: Merchant Cash Advance
+
+                              - `CSP`: Crowdfunding Service Provider
+
+                              '
+                            type: string
+                            enum:
+                            - MCA
+                            - CSP
+                            example: MCA
+                          contract_date:
+                            description: Date of the contract (ISO 8601 date).
+                            type: string
+                            format: date
+                            example: '2025-01-01'
+                          contract_version:
+                            description: Unique identifier of the contract version.
+                            type: string
+                            format: uuid
+                            example: 721f6cf8-b470-4f5f-ba71-eeaf68ac6bfa
+                      payment:
+                        type: object
+                        description: Payment collection configuration for offers in this group.
+                        required:
+                        - collection_method
+                        properties:
+                          collection_method:
+                            description: 'Method used to collect payments from the Business.
+
+
+                              - `PLATFORM_TRANSFER`: Payments are transferred to finmid by the Platform.
+
+                              - `DIRECT_DEBIT`: Payments are pulled from the Business''s bank account via Direct Debit.
+
+                              - `PAY_BY_INVOICE`: Payments are transferred by the Business based on invoice reminders.
+
+                              - `STANDING_ORDER`: Payments are transferred by the Business via periodic standing order.
+
+                              '
+                            type: string
+                            enum:
+                            - PLATFORM_TRANSFER
+                            - DIRECT_DEBIT
+                            - PAY_BY_INVOICE
+                            - STANDING_ORDER
+                            example: PLATFORM_TRANSFER
+                      flexible_offers:
+                        type: array
+                        description: 'List of flexible offers where payment is a percentage of the Business''s sales revenue. Each offer represents a different combination of `payout_amount` and `payment_estimated_months`.
+
+
+                          Either `flexible_offers` or `fixed_offers` will be populated, but not both. The type of offers depends on the financing setup and agreements between finmid and the Platform.
+
+
+                          Sorted by payout amount and estimated payment duration in ascending order.
+
+                          '
+                        items:
+                          type: object
+                          description: A flexible offer where payment is calculated as a percentage of sales revenue.
+                          required:
+                          - id
+                          - payout_amount
+                          - fee
+                          - payment_estimated_months
+                          - payment_percentage
+                          properties:
+                            id:
+                              description: Unique identifier of the offer.
+                              type: string
+                              format: uuid
+                              example: 550e8400-e29b-41d4-a716-446655440001
+                            payout_amount:
+                              allOf:
+                              - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                              - description: The amount of money that the Business will receive as payout if this offer is accepted.
+                                example: 10000
+                            fee:
+                              allOf:
+                              - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                              - description: The total cost of the funding for the Business.
+                                example: 500
+                            payment_estimated_months:
+                              description: Payment period for this offer, expressed as the maximum number of months until the funding is fully paid. The actual payment duration should not exceed this value. Different offers within an Offer Group will have different values, representing the available range of payment periods.
+                              type: integer
+                              format: int32
+                              example: 3
+                            payment_percentage:
+                              allOf:
+                              - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                              - description: 'Initial percentage of the Business''s sales revenue that will be deducted for payment.
+
+
+                                  This percentage may change over time based on the Business''s current revenue. For example, if revenue decreases, the percentage may be increased to ensure the funding is paid within the agreed `payment_estimated_months`.
+
+                                  '
+                                example: '15.000'
+                      fixed_offers:
+                        type: array
+                        description: 'List of fixed offers where payment is a fixed amount at a regular frequency. Each offer represents a different combination of `payout_amount` and `payment_estimated_months`.
+
+
+                          Either `flexible_offers` or `fixed_offers` will be populated, but not both. The type of offers depends on the financing setup and agreements between finmid and the Platform.
+
+
+                          Sorted by payout amount and estimated payment duration in ascending order.
+
+                          '
+                        items:
+                          type: object
+                          description: A fixed offer where payment is a fixed amount paid at a regular frequency.
+                          required:
+                          - id
+                          - payout_amount
+                          - fee
+                          - payment_estimated_months
+                          - payment_amount
+                          - payment_frequency
+                          properties:
+                            id:
+                              description: Unique identifier of the offer.
+                              type: string
+                              format: uuid
+                              example: 550e8400-e29b-41d4-a716-446655440010
+                            payout_amount:
+                              allOf:
+                              - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                              - description: The amount of money that the Business will receive as payout if this offer is accepted.
+                                example: 10000
+                            fee:
+                              allOf:
+                              - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                              - description: The total cost of the funding for the Business.
+                                example: 400
+                            payment_estimated_months:
+                              description: Payment period for this offer, expressed as the maximum number of months until the funding is fully paid. The actual payment duration should not exceed this value. Different offers within an Offer Group will have different values, representing the available range of payment periods.
+                              type: integer
+                              format: int32
+                              example: 6
+                            payment_amount:
+                              allOf:
+                              - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                              - description: Fixed amount the Business pays at each payment frequency interval.
+                                example: 200
+                            payment_frequency:
+                              $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1credits/get/responses/200/content/application~1json/schema/properties/data/items/properties/payment_frequency'
+              examples:
+                flexible_offer_group:
+                  summary: Active Offer Group with flexible offers
+                  value:
+                    offer_group:
+                      id: ab0e8400-e29b-41d4-a716-446655440001
+                      expires_at: '2025-01-15T23:59:59Z'
+                      currency: EUR
+                      contract:
+                        financing_setup: MCA
+                        contract_date: '2025-01-01'
+                        contract_version: 721f6cf8-b470-4f5f-ba71-eeaf68ac6bfa
+                      payment:
+                        collection_method: PLATFORM_TRANSFER
+                      flexible_offers:
+                      - id: 550e8400-e29b-41d4-a716-446655440001
+                        payout_amount: 10000
+                        fee: 500
+                        payment_estimated_months: 3
+                        payment_percentage: '15.000'
+                      - id: 550e8400-e29b-41d4-a716-446655440002
+                        payout_amount: 25000
+                        fee: 1125
+                        payment_estimated_months: 4
+                        payment_percentage: '18.000'
+                      - id: 550e8400-e29b-41d4-a716-446655440003
+                        payout_amount: 50000
+                        fee: 2000
+                        payment_estimated_months: 5
+                        payment_percentage: '20.000'
+                      fixed_offers: []
+                fixed_offer_group:
+                  summary: Active Offer Group with fixed offers
+                  value:
+                    offer_group:
+                      id: ab0e8400-e29b-41d4-a716-446655440002
+                      expires_at: '2025-01-15T23:59:59Z'
+                      currency: EUR
+                      contract:
+                        financing_setup: CSP
+                        contract_date: '2025-01-01'
+                        contract_version: 721f6cf8-b470-4f5f-ba71-eeaf68ac6bfa
+                      payment:
+                        collection_method: DIRECT_DEBIT
+                      flexible_offers: []
+                      fixed_offers:
+                      - id: 550e8400-e29b-41d4-a716-446655440010
+                        payout_amount: 10000
+                        fee: 400
+                        payment_estimated_months: 6
+                        payment_amount: 200
+                        payment_frequency: WEEKLY
+                      - id: 550e8400-e29b-41d4-a716-446655440011
+                        payout_amount: 20000
+                        fee: 700
+                        payment_estimated_months: 12
+                        payment_amount: 1750
+                        payment_frequency: WEEKLY
+                      - id: 550e8400-e29b-41d4-a716-446655440012
+                        payout_amount: 30000
+                        fee: 900
+                        payment_estimated_months: 12
+                        payment_amount: 2575
+                        payment_frequency: WEEKLY
+                no_active_offer_group:
+                  summary: No active offers available
+                  value:
+                    offer_group: null
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

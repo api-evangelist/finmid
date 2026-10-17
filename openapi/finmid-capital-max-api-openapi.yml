@@ -1,0 +1,247 @@
+openapi: 3.2.0
+info:
+  title: Capital Max API
+  version: v1.0
+  description: Endpoints for managing Capital Max applications.
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Capital Max
+  description: Endpoints for managing Capital Max applications.
+paths:
+  /api/v1/capital/businesses/{business_id}/capital-max:
+    get:
+      tags:
+      - Capital Max
+      operationId: get-capital-max
+      summary: Get Capital Max State
+      description: 'This endpoint returns the Capital Max state for a Business.
+
+
+        Capital Max allows a business to request additional capital beyond their standard funding.
+
+
+        The response includes Capital Max configuration and a list of past and current applications ordered by `appliedAt DESC`
+
+
+        The optional `application_status` query parameter allows filtering applications by their current status.
+
+
+        The lifecycle of a Capital Max Application is as follows:
+
+        - `IN_REVIEW`: the initial state of the resource. The associated offer group is deactivated to block the business from accepting previously generated offers. At any given time, there can be only one Funding Application in the `IN_REVIEW` state.
+
+        - `APPROVED`: a new offer group has been generated with higher funding limits, becoming the active offer group.
+
+        - `REJECTED`: the application was rejected and the offer group might or might not have been re-activated.
+
+        > Hint: query the Active Offer Group to find out if it has been re-activated or not.'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      - name: application_status
+        in: query
+        description: Filter applications by status.
+        required: false
+        schema:
+          description: 'Status of the Capital Max Application.
+
+
+            - `IN_REVIEW`: the application is currently under review.
+
+            - `APPROVED`: the application has been approved.
+
+            - `REJECTED`: the application has been rejected.
+
+            '
+          type: string
+          enum:
+          - IN_REVIEW
+          - APPROVED
+          - REJECTED
+          example: IN_REVIEW
+      responses:
+        '200':
+          description: Capital Max state for this Business.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - can_apply
+                - available_submission_types
+                - applications
+                properties:
+                  can_apply:
+                    description: Whether the business can currently submit a new Capital Max application.
+                    type: boolean
+                    example: true
+                  available_submission_types:
+                    description: The types of submissions currently available for the business.
+                    type: array
+                    items:
+                      description: 'Type of submission available for a Capital Max application.
+
+
+                        - `DOCUMENTS`: the business can submit documents.
+
+                        - `AISP_CONNECTION`: the business can connect via AISP (Account Information Service Provider).
+
+                        '
+                      type: string
+                      enum:
+                      - DOCUMENTS
+                      - AISP_CONNECTION
+                      example: DOCUMENTS
+                  applications:
+                    description: List of Capital Max applications for this business.
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - applied_at
+                      - requested_amount
+                      - submission_types
+                      - status
+                      properties:
+                        applied_at:
+                          description: Timestamp in UTC when the application was submitted (ISO 8601 datetime).
+                          type: string
+                          format: date-time
+                          example: '2025-06-10T14:30:00.000Z'
+                        requested_amount:
+                          description: The amount requested in the application
+                          type: integer
+                          example: 50000
+                        submission_types:
+                          description: The types of submissions included in this application.
+                          type: array
+                          items:
+                            $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1capital-max/get/responses/200/content/application~1json/schema/properties/available_submission_types/items'
+                        status:
+                          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1capital-max/get/parameters/1/schema'
+                        resolved_at:
+                          description: Timestamp in UTC when the application was resolved (ISO 8601 datetime). `null` if the application has not been resolved yet.
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          example: '2025-06-12T09:00:00.000Z'
+              examples:
+                enabled_with_applications:
+                  summary: Capital Max enabled with applications
+                  value:
+                    can_apply: true
+                    available_submission_types:
+                    - DOCUMENTS
+                    - AISP_CONNECTION
+                    applications:
+                    - applied_at: '2025-06-10T14:30:00.000Z'
+                      requested_amount: 50000
+                      submission_types:
+                      - DOCUMENTS
+                      status: APPROVED
+                      resolved_at: '2025-06-12T09:00:00.000Z'
+                    - applied_at: '2025-07-01T10:00:00.000Z'
+                      requested_amount: 75000
+                      submission_types:
+                      - DOCUMENTS
+                      - AISP_CONNECTION
+                      status: IN_REVIEW
+                      resolved_at: null
+                enabled_no_applications:
+                  summary: Capital Max enabled, no applications yet
+                  value:
+                    can_apply: true
+                    available_submission_types:
+                    - DOCUMENTS
+                    applications: []
+                not_enabled:
+                  summary: Capital Max not enabled
+                  value:
+                    can_apply: false
+                    available_submission_types: []
+                    applications: []
+                filtered_by_status:
+                  summary: Filtered by IN_REVIEW status
+                  value:
+                    can_apply: false
+                    available_submission_types:
+                    - DOCUMENTS
+                    applications:
+                    - applied_at: '2025-07-01T10:00:00.000Z'
+                      requested_amount: 75000
+                      submission_types:
+                      - DOCUMENTS
+                      status: IN_REVIEW
+                      resolved_at: null
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0

@@ -1,0 +1,815 @@
+openapi: 3.2.0
+info:
+  title: B2B Payments Buyer API
+  version: v2.3
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Buyer
+paths:
+  /api/v2/b2b-payments/buyers:
+    post:
+      tags:
+      - Buyer
+      operationId: create-buyer-v2
+      summary: Create Buyer
+      description: 'Let''s create/onboard a new buyer. For this you''ll need 2 things:
+
+        1. Create a new ID for this buyer (should map to your internal identifier)
+
+        2. The buyer''s legal information. ⚠️ Note that one of either business_registration_number or tax_number **must** be provided on creation.
+
+
+        > 📘
+
+        >
+
+        > You should create a buyer entity for every buyer on your platform that can be part of a lending transaction.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - id
+              - legal_name
+              - legal_address
+              - email
+              type: object
+              properties:
+                id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                  - description: 'Custom ID of the buyer, should map to your internal identifier. Must consist only of a-z, A-Z, 0-9 and .-_ characters, and length should not exceed 100 characters.
+
+                      '
+                    example: buyer-123
+                legal_name:
+                  allOf:
+                  - type: string
+                    maxLength: 100
+                  - description: 'Business name of the buyer (not necessarily the brand name). This should be the name as stated in official business registers.
+
+                      '
+                    example: Tante Emma GmbH
+                business_registration_number:
+                  allOf:
+                  - type: string
+                    maxLength: 100
+                  - description: 'Registration number of the buyer from the commercial register.
+
+                      '
+                    example: HRB123456B
+                tax_number:
+                  allOf:
+                  - type: string
+                    maxLength: 100
+                  - description: 'Identification number assigned to the buyer by local tax office. > ⚠️ This field must be provided in case the business registration number is omitted.
+
+                      '
+                    example: 12/345/67890
+                email:
+                  allOf:
+                  - type: string
+                    format: email
+                    pattern: ^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-zA-Z0-9-]*[a-zA-Z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$
+                  - description: Email address of the buyer.
+                    example: emma@example.com
+                phone:
+                  allOf:
+                  - type: string
+                    pattern: ^\+[0-9]+$
+                    minLength: 4
+                    maxLength: 30
+                  - description: Phone number of the buyer. Must be provided in the international format, e.g. `+49123456789`.
+                    example: '+49123456789'
+                legal_address:
+                  allOf:
+                  - type: object
+                    properties:
+                      address_line_1:
+                        description: First line of the address. This is usually a street name and house number combination.
+                        type: string
+                        maxLength: 100
+                      address_line_2:
+                        description: Second address line for any required additions to the first line. A typical example is c/o information.
+                        type: string
+                        maxLength: 100
+                      postal_code:
+                        description: Postal code of the address.
+                        type: string
+                        maxLength: 20
+                      city:
+                        description: City of the address.
+                        type: string
+                        maxLength: 100
+                      state:
+                        description: State of the address (if applicable).
+                        type: string
+                        maxLength: 100
+                      country:
+                        description: Country code (ISO 3166-1 alpha-3, e.g. `DEU`, `USA`).
+                        type: string
+                        example: DEU
+                        enum:
+                        - ABW
+                        - AFG
+                        - AGO
+                        - AIA
+                        - ALA
+                        - ALB
+                        - AND
+                        - ARE
+                        - ARG
+                        - ARM
+                        - ASM
+                        - ATA
+                        - ATF
+                        - ATG
+                        - AUS
+                        - AUT
+                        - AZE
+                        - BDI
+                        - BEL
+                        - BEN
+                        - BES
+                        - BFA
+                        - BGD
+                        - BGR
+                        - BHR
+                        - BHS
+                        - BIH
+                        - BLM
+                        - BLR
+                        - BLZ
+                        - BMU
+                        - BOL
+                        - BRA
+                        - BRB
+                        - BRN
+                        - BTN
+                        - BVT
+                        - BWA
+                        - CAF
+                        - CAN
+                        - CCK
+                        - CHE
+                        - CHL
+                        - CHN
+                        - CIV
+                        - CMR
+                        - COD
+                        - COG
+                        - COK
+                        - COL
+                        - COM
+                        - CPV
+                        - CRI
+                        - CUB
+                        - CUW
+                        - CXR
+                        - CYM
+                        - CYP
+                        - CZE
+                        - DEU
+                        - DJI
+                        - DMA
+                        - DNK
+                        - DOM
+                        - DZA
+                        - ECU
+                        - EGY
+                        - ERI
+                        - ESH
+                        - ESP
+                        - EST
+                        - ETH
+                        - FIN
+                        - FJI
+                        - FLK
+                        - FRA
+                        - FRO
+                        - FSM
+                        - GAB
+                        - GBR
+                        - GEO
+                        - GGY
+                        - GHA
+                        - GIB
+                        - GIN
+                        - GLP
+                        - GMB
+                        - GNB
+                        - GNQ
+                        - GRC
+                        - GRD
+                        - GRL
+                        - GTM
+                        - GUF
+                        - GUM
+                        - GUY
+                        - HKG
+                        - HMD
+                        - HND
+                        - HRV
+                        - HTI
+                        - HUN
+                        - IDN
+                        - IMN
+                        - IND
+                        - IOT
+                        - IRL
+                        - IRN
+                        - IRQ
+                        - ISL
+                        - ISR
+                        - ITA
+                        - JAM
+                        - JEY
+                        - JOR
+                        - JPN
+                        - KAZ
+                        - KEN
+                        - KGZ
+                        - KHM
+                        - KIR
+                        - KNA
+                        - KOR
+                        - KWT
+                        - LAO
+                        - LBN
+                        - LBR
+                        - LBY
+                        - LCA
+                        - LIE
+                        - LKA
+                        - LSO
+                        - LTU
+                        - LUX
+                        - LVA
+                        - MAC
+                        - MAF
+                        - MAR
+                        - MCO
+                        - MDA
+                        - MDG
+                        - MDV
+                        - MEX
+                        - MHL
+                        - MKD
+                        - MLI
+                        - MLT
+                        - MMR
+                        - MNE
+                        - MNG
+                        - MNP
+                        - MOZ
+                        - MRT
+                        - MSR
+                        - MTQ
+                        - MUS
+                        - MWI
+                        - MYS
+                        - MYT
+                        - NAM
+                        - NCL
+                        - NER
+                        - NFK
+                        - NGA
+                        - NIC
+                        - NIU
+                        - NLD
+                        - NOR
+                        - NPL
+                        - NRU
+                        - NZL
+                        - OMN
+                        - PAK
+                        - PAN
+                        - PCN
+                        - PER
+                        - PHL
+                        - PLW
+                        - PNG
+                        - POL
+                        - PRI
+                        - PRK
+                        - PRT
+                        - PRY
+                        - PSE
+                        - PYF
+                        - QAT
+                        - REU
+                        - ROU
+                        - RUS
+                        - RWA
+                        - SAU
+                        - SDN
+                        - SEN
+                        - SGP
+                        - SGS
+                        - SHN
+                        - SJM
+                        - SLB
+                        - SLE
+                        - SLV
+                        - SMR
+                        - SOM
+                        - SPM
+                        - SRB
+                        - SSD
+                        - STP
+                        - SUR
+                        - SVK
+                        - SVN
+                        - SWE
+                        - SWZ
+                        - SXM
+                        - SYC
+                        - SYR
+                        - TCA
+                        - TCD
+                        - TGO
+                        - THA
+                        - TJK
+                        - TKL
+                        - TKM
+                        - TLS
+                        - TON
+                        - TTO
+                        - TUN
+                        - TUR
+                        - TUV
+                        - TWN
+                        - TZA
+                        - UGA
+                        - UKR
+                        - UMI
+                        - URY
+                        - USA
+                        - UZB
+                        - VAT
+                        - VCT
+                        - VEN
+                        - VGB
+                        - VIR
+                        - VNM
+                        - VUT
+                        - WLF
+                        - WSM
+                        - YEM
+                        - ZAF
+                        - ZMB
+                        - ZWE
+                        - XKX
+                  - description: Legal address of the buyer.
+                    required:
+                    - address_line_1
+                    - postal_code
+                    - city
+                    - country
+                    example:
+                      address_line_1: Musterstraße 1
+                      postal_code: '11225'
+                      city: Musterstadt
+                      state: Saarland
+                      country: DEU
+        required: true
+      responses:
+        '200':
+          description: The buyer was created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - status
+                - legal_name
+                - legal_address
+                properties:
+                  id:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    - description: ID of the buyer.
+                      example: buyer-123
+                  status:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1list/get/parameters/0/schema/items'
+                    - description: Current status of the buyer.
+                      example: PENDING
+                  legal_name:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_name/allOf/0'
+                    - description: Legal name of the buyer's business.
+                      example: Tante Emma GmbH
+                  business_registration_number:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/business_registration_number/allOf/0'
+                    - description: Business registration number of the buyer.
+                      example: HRB123456B
+                  tax_number:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/tax_number/allOf/0'
+                    - description: 'Identification number assigned to the buyer by local tax office.
+
+                        '
+                      example: 12/345/67890
+                  email:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/email/allOf/0'
+                    - description: Email address of the buyer.
+                      example: emma@example.com
+                  phone:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/phone/allOf/0'
+                    - description: Phone number of the buyer in the international format (e.g. `+49123456789`).
+                      example: '+49123456789'
+                  legal_address:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_address/allOf/0'
+                    - description: Legal address of the buyer.
+                      required:
+                      - address_line_1
+                      - postal_code
+                      - city
+                      - country
+                      example:
+                        address_line_1: Musterstraße 1
+                        postal_code: '11225'
+                        city: Musterstadt
+                        state: Saarland
+                        country: DEU
+        '400':
+          description: The request is invalid and failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  required:
+                  - code
+                  - description
+                  properties:
+                    code:
+                      allOf:
+                      - type: string
+                        enum:
+                        - validation_error
+                        - server_error
+                        - buyer_invalid
+                        - seller_invalid
+                        - platform_invalid
+                        - payment_request_invalid
+                        - line_item_invalid
+                        - buyer_conflict
+                        - seller_conflict
+                        - payment_request_conflict
+                        - business_conflict
+                        - business_not_found
+                        - document_already_exists
+                        - incoming_webhook_conflict
+                        - mcc_not_eligible
+                        - offer_group_not_active
+                        - offer_group_not_found
+                        - platform_check_already_consumed
+                        - platform_check_not_required
+                        - platform_check_unavailable
+                        - platform_checks_not_enabled
+                      - description: Code that represents the kind of error.
+                    description:
+                      allOf:
+                      - type: string
+                      - description: A more detailed description of the error.
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: legal_name must not be blank
+        '401':
+          description: Missing or invalid API key. Could not authenticate API request.
+        '409':
+          description: Buyer exists already.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - buyer_conflict
+                    description:
+                      example: Cannot create this buyer because it exists already
+        '500':
+          description: An unexpected server error occurred. You should try again later or contact finmid support.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/400/content/application~1json/schema/allOf/0'
+                - properties:
+                    code:
+                      type: string
+                      enum:
+                      - server_error
+                    description:
+                      example: Our server was hit by a meteorite 💥.
+              examples:
+                server_error:
+                  value:
+                    code: server_error
+                    description: Internal processing error
+  /api/v2/b2b-payments/buyers/list:
+    get:
+      tags:
+      - Buyer
+      operationId: get-buyers-for-platform
+      summary: Get Buyers
+      description: Returns a list of buyers. Cursor-based pagination is supported and you can make use of filter parameters to change sorting or limit the results to only buyers with certain status..
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: array
+          description: 'List of buyer status. Providing one or more status only includes buyers that have one of the provided status.
+
+            '
+          items:
+            type: string
+            enum:
+            - PENDING
+            - ACTIVE
+            - INACTIVE
+            - REJECTED
+            - SUSPENDED
+      - name: sort_by
+        in: query
+        required: false
+        schema:
+          description: Sorting of the results.
+          type: string
+          enum:
+          - CREATED_ASC
+          - CREATED_DESC
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          description: A cursor used for pagination.
+          example: cGktMTIzNDV8MjAyMi0wNC0yOFQwNjowOToxNyswMDowMAo=
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          description: Limits the amount of results per page.
+          example: 20
+          type: integer
+          format: int32
+          default: 100
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: A result set containing details of buyers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: object
+                    properties:
+                      next_cursor:
+                        type: string
+                        description: A cursor pointing to the beginning of the next page.
+                        example: ddTkVYVHxmMzA1ZjBlNi00YzM2LTQwZmEtOTI5YS0yZjJiODJlYjU2ZjR8MjAyMi0xMC0yOFQxMDoxMDoyOS4zMTkzMDlafA
+                      previous_cursor:
+                        type: string
+                        description: A cursor pointing to the beginning of the previous page.
+                        example: ccUFJFVklPVVN8ZjhjODRmYzctZDIyMS00NzYxLThlMTktN2QxYTM5ZTIyZDgxfDIwMjItMTEtMDJUMTM6NTE6MTkuMzI3MTk1Wnw
+                  data:
+                    description: List of Buyers.
+                    type: array
+                    items:
+                      $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/buyers/{id}:
+    get:
+      tags:
+      - Buyer
+      operationId: get-buyer-v2
+      summary: Get Buyer
+      description: For getting a certain buyer's details, you'll only need the buyer's ID specified on creation.
+      parameters:
+      - name: id
+        description: ID of the buyer as specified on buyer creation.
+        in: path
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+      responses:
+        '200':
+          description: Details of the requested buyer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          description: No buyer found for the given ID.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - buyer_invalid
+                    description:
+                      example: Buyer with ID buyer-000 does not exist
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+    patch:
+      tags:
+      - Buyer
+      x-tags:
+      - PatchBuyer
+      operationId: update-buyer-v2
+      summary: Update Buyer
+      description: 'Update a buyer if certain data changes on your platform. For this you''ll need:
+
+        1. The buyer''s ID specified on creation
+
+        2. The data you want to change'
+      parameters:
+      - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}/get/parameters/0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                legal_name:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_name/allOf/0'
+                  - description: New legal name of the business.
+                    example: Onkel Ernie GmbH
+                email:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/email/allOf/0'
+                  - description: New email address of the buyer.
+                    example: ernie@example.com
+                phone:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/phone/allOf/0'
+                  - description: New phone number of the buyer.
+                    example: '+49987654321'
+                legal_address:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_address/allOf/0'
+                  - description: New legal address of the buyer.
+                    example:
+                      address_line_1: Mustergasse 1
+                      postal_code: '12345'
+                      city: Musterstadt
+                      state: Niedersachsen
+                      country: DEU
+        required: true
+      responses:
+        '200':
+          description: Updated buyer details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/buyers/{id}/payment-limit:
+    get:
+      tags:
+      - Buyer
+      operationId: get-buyer-limit-v2
+      summary: Get Buyer Limit
+      description: 'Get estimated buyer limit in a target currency.
+
+        > 📘
+
+        >
+
+        > Note: this limit is an estimate and subject to change depending on a specific payment request parameters. To verify if specific purchase can be financed please use Check Payment Request API'
+      parameters:
+      - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}/get/parameters/0'
+      - name: currency
+        in: query
+        required: false
+        schema:
+          allOf:
+          - description: Three-letter currency code (ISO 4217). Supported currencies `EUR`, `GBP`, and `USD`.
+            type: string
+            example: EUR
+      responses:
+        '200':
+          description: Estimated limit for the buyer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - estimated_remaining_limit
+                - currency
+                - total_limit
+                - used_limit
+                - pending_requests_amount
+                properties:
+                  estimated_remaining_limit:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Estimated available amount which could be approved for payment request for the buyer.
+                      example: 9000
+                  total_limit:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Estimated maximum amount of all open buyer's payment requests.
+                      example: 10000
+                  used_limit:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Sum of all pending and reserved buyer's payment requests.
+                      example: 1000
+                  pending_requests_amount:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                    - description: Sum of all reserved but not pending for repayment buyer's payment requests.
+                      example: 500
+                  currency:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+                    - description: Three-letter currency code (ISO 4217). Supported currencies `EUR` and `GBP`
+                      example: EUR
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/cancel-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-buyer-v2.md
+  - https://docs.finmid.com/reference/create-payment-request-payout.md
+  - https://docs.finmid.com/reference/create-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-seller-v2.md
+  - https://docs.finmid.com/reference/get-buyer-limit-v2.md
+  - https://docs.finmid.com/reference/get-buyer-v2.md
+  - https://docs.finmid.com/reference/get-buyers-for-platform.md
+  - https://docs.finmid.com/reference/get-payment-request-v2.md
+  - https://docs.finmid.com/reference/get-payment-requests-v2.md
+  - https://docs.finmid.com/reference/get-seller-v2.md
+  - https://docs.finmid.com/reference/get-sellers-for-platform.md
+  - https://docs.finmid.com/reference/get-tasks.md
+  - https://docs.finmid.com/reference/simulate-buyer-v2.md
+  - https://docs.finmid.com/reference/simulate-payment-request-repayment-v2.md
+  - https://docs.finmid.com/reference/simulate-seller-v2.md
+  - https://docs.finmid.com/reference/update-buyer-v2.md
+  - https://docs.finmid.com/reference/update-payment-request-v2.md
+  - https://docs.finmid.com/reference/update-seller-bank-account-v2.md
+  - https://docs.finmid.com/reference/update-seller-v2.md
+  - https://docs.finmid.com/reference/upload-payment-request-documents.md
+  merge:
+    pages: 21
+    deduped: 119
+    conflicts_kept_first: 0

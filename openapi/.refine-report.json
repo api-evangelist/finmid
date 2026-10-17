@@ -1,0 +1,61 @@
+{
+  "provider": "finmid",
+  "sources": [
+    "finmid-b2b-payments-api-openapi.yml",
+    "finmid-capital-api-openapi.yml"
+  ],
+  "outputs": [
+    "finmid-beta-endpoints-api-openapi.yml",
+    "finmid-buyer-api-openapi.yml",
+    "finmid-payment-request-api-openapi.yml",
+    "finmid-seller-api-openapi.yml",
+    "finmid-simulation-api-openapi.yml",
+    "finmid-tasks-api-openapi.yml",
+    "finmid-business-api-openapi.yml",
+    "finmid-csp-financial-document-api-openapi.yml",
+    "finmid-capital-max-api-openapi.yml",
+    "finmid-document-api-openapi.yml",
+    "finmid-funding-api-openapi.yml",
+    "finmid-funding-application-api-openapi.yml",
+    "finmid-incoming-webhook-api-openapi.yml",
+    "finmid-offer-api-openapi.yml",
+    "finmid-offer-group-api-openapi.yml",
+    "finmid-onboarding-api-openapi.yml",
+    "finmid-payment-api-openapi.yml",
+    "finmid-sales-statements-api-openapi.yml"
+  ],
+  "archived": [
+    "deleted 2 superseded output(s) from the previous generation"
+  ],
+  "errors": [],
+  "warnings": [
+    "finmid-b2b-payments-api-openapi.yml: previously refined output kept for 22 operation(s) no archived document covers (e.g. /api/v2/b2b-payments/buyers post, /api/v2/b2b-payments/buyers/list get, /api/v2/b2b-payments/buyers/{id} get); its other 0 operation(s) came from the archive and were dropped from it. The archive is incomplete for this provider \u2014 re-harvest to restore _original/ as the full source of truth.",
+    "finmid-capital-api-openapi.yml: previously refined output kept for 43 operation(s) no archived document covers (e.g. /api/v1/capital/businesses post, /api/v1/capital/businesses/{business_id} get, /api/v1/capital/businesses/{business_id}/capital-max get); its other 0 operation(s) came from the archive and were dropped from it. The archive is incomplete for this provider \u2014 re-harvest to restore _original/ as the full source of truth."
+  ],
+  "notes": [
+    "sourced from openapi/_original/ (0 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "finmid-b2b-payments-api-openapi.yml: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
+    "finmid-b2b-payments-api-openapi.yml: declared missing tag: Beta Endpoints",
+    "finmid-b2b-payments-api-openapi.yml: declared missing tag: Buyer",
+    "finmid-b2b-payments-api-openapi.yml: declared missing tag: Payment Request",
+    "finmid-b2b-payments-api-openapi.yml: declared missing tag: Seller",
+    "finmid-b2b-payments-api-openapi.yml: declared missing tag: Simulation",
+    "finmid-b2b-payments-api-openapi.yml: declared missing tag: Tasks",
+    "finmid-capital-api-openapi.yml: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
+    "finmid-capital-api-openapi.yml: declared missing tag: Business",
+    "finmid-capital-api-openapi.yml: declared missing tag: CSP Financial Document",
+    "finmid-capital-api-openapi.yml: declared missing tag: Document",
+    "finmid-capital-api-openapi.yml: declared missing tag: Funding",
+    "finmid-capital-api-openapi.yml: declared missing tag: Incoming Webhook",
+    "finmid-capital-api-openapi.yml: declared missing tag: Offer",
+    "finmid-capital-api-openapi.yml: declared missing tag: Offer Group",
+    "finmid-capital-api-openapi.yml: declared missing tag: Onboarding",
+    "finmid-capital-api-openapi.yml: declared missing tag: Payment",
+    "finmid-capital-api-openapi.yml: declared missing tag: Sales statements",
+    "finmid-capital-api-openapi.yml: declared missing tag: Simulation",
+    "tag 'Simulation' spans 2 source specs (finmid-b2b-payments-api-openapi.yml, finmid-capital-api-openapi.yml): per-path servers applied",
+    "superseded outputs removed: finmid-b2b-payments-api-openapi.yml, finmid-capital-api-openapi.yml",
+    "apis.yml register: written (+18 apis, 20 total)"
+  ],
+  "skipped": []
+}

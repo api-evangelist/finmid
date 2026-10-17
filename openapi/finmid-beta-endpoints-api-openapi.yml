@@ -1,0 +1,174 @@
+openapi: 3.2.0
+info:
+  title: B2B Payments Beta Endpoints API
+  version: v2.3
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Beta Endpoints
+paths:
+  /api/v2/b2b-payments/reports/settlement:
+    get:
+      tags:
+      - Beta Endpoints
+      operationId: get-settlement-report
+      summary: Seller Settlements Report
+      description: Returns a list of payouts made to sellers within a given date range. A payout corresponds to actual money being transferred to the seller’s account as a consequence of a Payment Request (Line Item) being captured.
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Payout date of the first payout to be included in the results.
+          example: '2023-01-01'
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Payout date of the last payout.
+          example: '2023-01-31'
+      responses:
+        '200':
+          description: Returns metadata regarding report creation, and a list of payouts to sellers.
+          content:
+            application/json:
+              schema:
+                required:
+                - created_at
+                - data
+                - from_date
+                - to_date
+                type: object
+                properties:
+                  created_at:
+                    allOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:[0-5]\d)$
+                    - description: Timestamp at which the report was generated.
+                  from_date:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/to_date/allOf/0'
+                  to_date:
+                    allOf:
+                    - type: string
+                      format: date
+                      pattern: ^[0-9]{4}-[0-9][2]-[0-9][2]$
+                  data:
+                    type: array
+                    description: List of individual payouts made to sellers within the given date range.
+                    items:
+                      required:
+                      - capture_date
+                      - currency
+                      - line_item_id
+                      - original_amount
+                      - payment_request_id
+                      - payment_reference
+                      - payout_amount
+                      - payout_date
+                      - seller_fee_amount
+                      - seller_id
+                      - total_paid_amount
+                      - remainder_amount
+                      type: object
+                      properties:
+                        capture_date:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/to_date/allOf/0'
+                          - description: Date the line item was captured by the platform.
+                        payout_date:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/to_date/allOf/0'
+                          - description: Date the captured amount was paid out to the seller.
+                        payment_reference:
+                          type: string
+                          description: Payment reference included in the bank transaction to the seller.
+                        payment_request_id:
+                          type: string
+                          description: ID of the payment request
+                        seller_id:
+                          type: string
+                          description: ID of the seller associated with the payout.
+                        line_item_id:
+                          type: string
+                        original_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Total amount of the transaction.
+                            example: 1000
+                        seller_fee_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Fee charged to seller.
+                            example: 10
+                        payout_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Net amount (original_amount - fee) paid out to seller.
+                            example: 990
+                        currency:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+                          - description: Three-letter currency code (ISO 4217).
+                        total_paid_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Amount already paid out to seller.
+                            example: 10
+                        remainder_amount:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/requestBody/content/application~1json/schema/properties/total_amount/allOf/0'
+                          - description: Amount remaining to be paid out.
+                            example: 10
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/cancel-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-buyer-v2.md
+  - https://docs.finmid.com/reference/create-payment-request-payout.md
+  - https://docs.finmid.com/reference/create-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-seller-v2.md
+  - https://docs.finmid.com/reference/get-buyer-limit-v2.md
+  - https://docs.finmid.com/reference/get-buyer-v2.md
+  - https://docs.finmid.com/reference/get-buyers-for-platform.md
+  - https://docs.finmid.com/reference/get-payment-request-v2.md
+  - https://docs.finmid.com/reference/get-payment-requests-v2.md
+  - https://docs.finmid.com/reference/get-seller-v2.md
+  - https://docs.finmid.com/reference/get-sellers-for-platform.md
+  - https://docs.finmid.com/reference/get-tasks.md
+  - https://docs.finmid.com/reference/simulate-buyer-v2.md
+  - https://docs.finmid.com/reference/simulate-payment-request-repayment-v2.md
+  - https://docs.finmid.com/reference/simulate-seller-v2.md
+  - https://docs.finmid.com/reference/update-buyer-v2.md
+  - https://docs.finmid.com/reference/update-payment-request-v2.md
+  - https://docs.finmid.com/reference/update-seller-bank-account-v2.md
+  - https://docs.finmid.com/reference/update-seller-v2.md
+  - https://docs.finmid.com/reference/upload-payment-request-documents.md
+  merge:
+    pages: 21
+    deduped: 119
+    conflicts_kept_first: 0

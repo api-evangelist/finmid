@@ -1,0 +1,168 @@
+openapi: 3.2.0
+info:
+  title: B2B Payments Tasks API
+  version: v2.3
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Tasks
+paths:
+  /api/v2/b2b-payments/payment-requests/documents:
+    post:
+      tags:
+      - Tasks
+      operationId: upload-payment-request-documents
+      summary: Upload payment documents
+      description: 'Upload a list of documents for a task with entity type: `PAYMENT_REQUEST_TASK` the documents will then be used for the approval of payment request payouts during the spot checks process. Some documents that can be provided are:
+
+        - Invoice - Order confirmation or sales contract - Shipping document or bill of lading - Other documents supporting your payment request
+
+        Your documents must be in JPG, PNG, or PDF and no larger than 15.0 MB'
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Id of the payment request for which to submit documents to.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - file
+              type: object
+              properties:
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '202':
+          description: We have accepted the submitted documents.
+  /api/v2/b2b-payments/tasks:
+    get:
+      tags:
+      - Tasks
+      operationId: get-tasks
+      summary: Get tasks
+      description: For getting the platform tasks, normally a task is created when there is a payment request that requires additional documents or when a buyer increase limit is requested. tasks are ordered by creation time descending meaning the newest task will be first.
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: array
+          description: 'List of task status. Providing one or more status only includes tasks that have one of the provided status.
+
+            '
+          items:
+            type: string
+            enum:
+            - PENDING
+            - SUBMITTED
+            - PROCESSING
+            - COMPLETED
+            description: Current status of the task.
+      - name: entity_type
+        in: query
+        required: false
+        schema:
+          type: array
+          description: 'List of task entity type. Providing one or more entity types only includes tasks that have one of the provided entity types. allows to filter buyer or payment requests tasks.
+
+            '
+          items:
+            type: string
+            enum:
+            - BUYER_TASK
+            - PAYMENT_REQUEST_TASK
+      responses:
+        '200':
+          description: A result set containing pending tasks for the platform.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - id
+                  - status
+                  - type
+                  - creation_time
+                  - entity_type
+                  properties:
+                    id:
+                      description: ID of the task
+                      type: string
+                    status:
+                      allOf:
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1tasks/get/parameters/0/schema/items'
+                      - description: Current status of the task.
+                    payment_intent_id:
+                      description: ID of payment intent of the task
+                      type: string
+                    buyer_id:
+                      description: buyer id of the task
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                      - DOCUMENTS_REQUIRED
+                    entity_type:
+                      allOf:
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1tasks/get/parameters/1/schema/items'
+                      - description: if the task is related to buyers or payment requests.
+                    creation_time:
+                      allOf:
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/created_at/allOf/0'
+                      - description: Creation time of the task (ISO 8601 datetime).
+                    completion_time:
+                      allOf:
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1reports~1settlement/get/responses/200/content/application~1json/schema/properties/created_at/allOf/0'
+                      - description: Completion time of the task (ISO 8601 datetime).
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/cancel-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-buyer-v2.md
+  - https://docs.finmid.com/reference/create-payment-request-payout.md
+  - https://docs.finmid.com/reference/create-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-seller-v2.md
+  - https://docs.finmid.com/reference/get-buyer-limit-v2.md
+  - https://docs.finmid.com/reference/get-buyer-v2.md
+  - https://docs.finmid.com/reference/get-buyers-for-platform.md
+  - https://docs.finmid.com/reference/get-payment-request-v2.md
+  - https://docs.finmid.com/reference/get-payment-requests-v2.md
+  - https://docs.finmid.com/reference/get-seller-v2.md
+  - https://docs.finmid.com/reference/get-sellers-for-platform.md
+  - https://docs.finmid.com/reference/get-tasks.md
+  - https://docs.finmid.com/reference/simulate-buyer-v2.md
+  - https://docs.finmid.com/reference/simulate-payment-request-repayment-v2.md
+  - https://docs.finmid.com/reference/simulate-seller-v2.md
+  - https://docs.finmid.com/reference/update-buyer-v2.md
+  - https://docs.finmid.com/reference/update-payment-request-v2.md
+  - https://docs.finmid.com/reference/update-seller-bank-account-v2.md
+  - https://docs.finmid.com/reference/update-seller-v2.md
+  - https://docs.finmid.com/reference/upload-payment-request-documents.md
+  merge:
+    pages: 21
+    deduped: 119
+    conflicts_kept_first: 0

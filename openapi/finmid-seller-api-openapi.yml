@@ -1,0 +1,538 @@
+openapi: 3.2.0
+info:
+  title: B2B Payments Seller API
+  version: v2.3
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Seller
+paths:
+  /api/v2/b2b-payments/sellers:
+    post:
+      tags:
+      - Seller
+      operationId: create-seller-v2
+      summary: Create Seller
+      description: 'Let''s create/onboard a new seller. For this you''ll need 2 things:
+
+        1. Create a new ID for this seller (should map to your internal identifier)
+
+        2. The seller''s legal information. ⚠️ Note that one of either business_registration_number or tax_number **must** be provided on creation.
+
+
+        > 📘
+
+        >
+
+        > You should create a seller entity for every seller on your platform that can be part of a lending transaction.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - id
+              - legal_name
+              - legal_address
+              - bank_accounts
+              - email
+              type: object
+              properties:
+                id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                  - description: 'Custom ID of the seller, should map to your internal identifier. Must consist only of a-z, A-Z, 0-9 and .-_ characters, and length should not exceed 100 characters.
+
+                      '
+                    example: seller-321
+                legal_name:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_name/allOf/0'
+                  - description: 'Business name of the seller (not necessarily the brand name). This should be the name as stated in official business registers.
+
+                      '
+                    example: Coolstore GmbH
+                business_registration_number:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/business_registration_number/allOf/0'
+                  - description: 'Registration number of the seller from the commercial register.
+
+                      '
+                    example: HRB654321B
+                tax_number:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/tax_number/allOf/0'
+                  - description: 'Identification number assigned to the seller by local tax office.
+
+                      '
+                    example: 12/345/67890
+                email:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/email/allOf/0'
+                  - description: Email address of the seller.
+                    example: coolstore@example.com
+                phone:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/phone/allOf/0'
+                  - description: Phone number of the seller. Must be provided in the international format, e.g. `+49123456789`.
+                    example: '+49123456789'
+                legal_address:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_address/allOf/0'
+                  - description: Legal address of the seller.
+                    required:
+                    - address_line_1
+                    - postal_code
+                    - city
+                    - country
+                    example:
+                      address_line_1: Mustergasse 123
+                      postal_code: '55441'
+                      city: Musterhausen
+                      state: Niedersachsen
+                      country: DEU
+                bank_accounts:
+                  type: array
+                  description: 'Bank account details used for payouts to seller
+
+                    Note: only one bank account allowed per currency.
+
+                    '
+                  items:
+                    oneOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}~1bank-details/patch/requestBody/content/application~1json/schema/properties/bank_account/oneOf/0'
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}~1bank-details/patch/requestBody/content/application~1json/schema/properties/bank_account/oneOf/1'
+                    - title: SWIFT Bank Account
+                      type: object
+                      required:
+                      - account_number
+                      - account_number_type
+                      - bic_swift
+                      - address
+                      - currency
+                      properties:
+                        account_number:
+                          description: IBAN or AccountNumber of the seller.
+                          type: string
+                        account_number_type:
+                          description: Type of the accountNumber field. Either 'IBAN' or 'ACCOUNT_NUMBER'
+                          type: string
+                        bic_swift:
+                          description: BIC of the seller's bank.
+                          type: string
+                        address:
+                          type: object
+                          required:
+                          - address_line
+                          - city
+                          - country
+                          properties:
+                            address_line:
+                              description: First line of the address. This is usually a street name and house number combination.
+                              type: string
+                              maxLength: 100
+                            city:
+                              description: City of the address.
+                              type: string
+                              maxLength: 100
+                            country:
+                              $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_address/allOf/0/properties/country'
+                        currency:
+                          allOf:
+                          - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+        required: true
+      responses:
+        '200':
+          description: The seller was created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - status
+                - legal_name
+                - bank_accounts
+                properties:
+                  id:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                    - description: ID of the seller.
+                      example: seller-321
+                  status:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1list/get/parameters/0/schema/items'
+                    - description: Current status of the seller.
+                      example: PENDING
+                  legal_name:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_name/allOf/0'
+                    - description: Legal name of the seller's business.
+                      example: Coolstore GmbH
+                  business_registration_number:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/business_registration_number/allOf/0'
+                    - description: Business registration number of the seller.
+                      example: HRB654321B
+                  tax_number:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/tax_number/allOf/0'
+                    - description: 'Identification number assigned to the buyer by local tax office.
+
+                        '
+                      example: 12/345/67890
+                  email:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/email/allOf/0'
+                    - description: Email address of the seller.
+                      example: coolstore@example.com
+                  phone:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/phone/allOf/0'
+                    - description: Phone number of the seller in the international format (e.g. `+49987654321`).
+                      example: '+49987654321'
+                  legal_address:
+                    allOf:
+                    - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_address/allOf/0'
+                    - description: Legal address of the seller.
+                      required:
+                      - address_line_1
+                      - postal_code
+                      - city
+                      - country
+                      example:
+                        address_line_1: Mustergasse 123
+                        postal_code: '55441'
+                        city: Musterhausen
+                        state: Niedersachsen
+                        country: DEU
+                  bank_accounts:
+                    type: array
+                    description: Bank account details used for payouts to seller
+                    items:
+                      oneOf:
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}~1bank-details/patch/requestBody/content/application~1json/schema/properties/bank_account/oneOf/0'
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}~1bank-details/patch/requestBody/content/application~1json/schema/properties/bank_account/oneOf/1'
+                      - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers/post/requestBody/content/application~1json/schema/properties/bank_accounts/items/oneOf/2'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '409':
+          description: Seller exists already.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - seller_conflict
+                    description:
+                      example: Cannot create this seller because it exists already
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/sellers/list:
+    get:
+      tags:
+      - Seller
+      operationId: get-sellers-for-platform
+      summary: Get Sellers
+      description: Returns a list of sellers. Cursor-based pagination is supported and you can make use of filter parameters to change sorting or limit the results to only sellers with certain status..
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: array
+          description: 'List of sellers status. Providing one or more status only includes sellers that have one of the provided status.
+
+            '
+          items:
+            type: string
+            enum:
+            - PENDING
+            - ACTIVE
+            - INACTIVE
+            - REJECTED
+            - SUSPENDED
+      - name: sort_by
+        in: query
+        required: false
+        schema:
+          description: Sorting of the results.
+          type: string
+          enum:
+          - CREATED_ASC
+          - CREATED_DESC
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          description: A cursor used for pagination.
+          example: cGktMTIzNDV8MjAyMi0wNC0yOFQwNjowOToxNyswMDowMAo=
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          description: Limits the amount of results per page.
+          example: 20
+          type: integer
+          format: int32
+          default: 100
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: A result set containing details of sellers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: object
+                    properties:
+                      next_cursor:
+                        type: string
+                        description: A cursor pointing to the beginning of the next page.
+                        example: ddTkVYVHxwMzA1ZjBlNi00YzM2LTQwZmEtOTI5YS0yZjJiODJlYjU2ZjR8MjAyMi0xMC0yOFQxMDoxMDoyOS4zMTkzMDlafA
+                      previous_cursor:
+                        type: string
+                        description: A cursor pointing to the beginning of the previous page.
+                        example: ddUFJFVklPVVN8ZjhjODRmYzctZDIyMS00NzYxLThlMTktN2QxYTM5ZTIyZDgxfDIwMjItMTEtMDJUMTM6NTE6MTkuMzI3MTk1Wnw
+                  data:
+                    description: List of Sellers.
+                    type: array
+                    items:
+                      $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/sellers/{id}:
+    get:
+      tags:
+      - Seller
+      operationId: get-seller-v2
+      summary: Get Seller
+      description: For getting a certain seller's details, you'll only need the seller's ID specified on creation.
+      parameters:
+      - name: id
+        description: ID of the seller as specified on seller creation.
+        in: path
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+      responses:
+        '200':
+          description: Details of the requested seller.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          description: No seller found for the given ID.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - seller_invalid
+                    description:
+                      example: Seller with ID seller-000 does not exist
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+    patch:
+      tags:
+      - Seller
+      x-tags:
+      - PatchSeller
+      operationId: update-seller-v2
+      summary: Update Seller
+      description: 'Update a seller if certain data changes on your platform. For this you''ll need:
+
+        1. The seller''s ID specified on creation
+
+        2. The data you want to change'
+      parameters:
+      - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}/get/parameters/0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                legal_name:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_name/allOf/0'
+                  - description: New legal name of the business.
+                    example: HappyCandles GmbH
+                email:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/email/allOf/0'
+                  - description: New email address of the seller.
+                    example: happy-candles@example.com
+                phone:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/phone/allOf/0'
+                  - description: New phone number of the seller.
+                    example: '+49987654321'
+                legal_address:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/requestBody/content/application~1json/schema/properties/legal_address/allOf/0'
+                  - description: New legal address of the seller.
+                    example:
+                      address_line_1: Musterweg 100 a
+                      postal_code: '54321'
+                      city: Musterhausen
+                      state: Brandenburg
+                      country: DEU
+        required: true
+      responses:
+        '200':
+          description: Updated seller details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+  /api/v2/b2b-payments/sellers/{id}/bank-details:
+    patch:
+      tags:
+      - Seller
+      x-tags:
+      - PatchSeller
+      operationId: update-seller-bank-account-v2
+      summary: Update Seller Bank Account
+      description: 'Update a seller''s bank account details. For this you''ll need: 1. The seller''s ID specified on creation
+
+        2. The new bank account details.
+
+        Note: This currently is only supported for sellers with a single bank account.'
+      parameters:
+      - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}/get/parameters/0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - bank_account
+              properties:
+                bank_account:
+                  oneOf:
+                  - title: SEPA Account
+                    type: object
+                    required:
+                    - iban
+                    - currency
+                    properties:
+                      iban:
+                        description: IBAN of the seller.
+                        type: string
+                      bic:
+                        description: BIC of the seller's bank.
+                        type: string
+                      currency:
+                        allOf:
+                        - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}~1payment-limit/get/parameters/1/schema/allOf/0'
+                  - title: FPS Account
+                    type: object
+                    required:
+                    - sort_code
+                    - account_number
+                    - currency
+                    properties:
+                      sort_code:
+                        description: 6-digit sort code of the seller's account.
+                        type: string
+                        minLength: 6
+                        maxLength: 6
+                        pattern: ^\d+$
+                      account_number:
+                        description: 8-digit number of the seller's account.
+                        type: string
+                        minLength: 8
+                        maxLength: 8
+                        pattern: ^\d+$
+                      bank_code:
+                        description: Bank code of the seller's account.
+                        type: string
+                        minLength: 4
+                        maxLength: 4
+                      currency:
+                        allOf:
+                        - description: Three-letter currency code (ISO 4217). Supported currencies `GBP`.
+                          type: string
+                          example: GBP
+        required: true
+      responses:
+        '200':
+          description: Updated seller details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/cancel-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-buyer-v2.md
+  - https://docs.finmid.com/reference/create-payment-request-payout.md
+  - https://docs.finmid.com/reference/create-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-seller-v2.md
+  - https://docs.finmid.com/reference/get-buyer-limit-v2.md
+  - https://docs.finmid.com/reference/get-buyer-v2.md
+  - https://docs.finmid.com/reference/get-buyers-for-platform.md
+  - https://docs.finmid.com/reference/get-payment-request-v2.md
+  - https://docs.finmid.com/reference/get-payment-requests-v2.md
+  - https://docs.finmid.com/reference/get-seller-v2.md
+  - https://docs.finmid.com/reference/get-sellers-for-platform.md
+  - https://docs.finmid.com/reference/get-tasks.md
+  - https://docs.finmid.com/reference/simulate-buyer-v2.md
+  - https://docs.finmid.com/reference/simulate-payment-request-repayment-v2.md
+  - https://docs.finmid.com/reference/simulate-seller-v2.md
+  - https://docs.finmid.com/reference/update-buyer-v2.md
+  - https://docs.finmid.com/reference/update-payment-request-v2.md
+  - https://docs.finmid.com/reference/update-seller-bank-account-v2.md
+  - https://docs.finmid.com/reference/update-seller-v2.md
+  - https://docs.finmid.com/reference/upload-payment-request-documents.md
+  merge:
+    pages: 21
+    deduped: 119
+    conflicts_kept_first: 0

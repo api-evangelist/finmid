@@ -1,0 +1,1250 @@
+openapi: 3.2.0
+info:
+  title: Finmid Simulation API
+  version: '1.0'
+  description: 'Operations tagged Simulation across 2 of this provider''s published API definitions: finmid-b2b-payments-api-openapi.yml, finmid-capital-api-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Simulation
+paths:
+  /api/v2/b2b-payments/simulation/buyer:
+    patch:
+      tags:
+      - Simulation
+      operationId: simulate-buyer-v2
+      summary: Simulate Buyer
+      description: 'This endpoint allows you to simulate onboarding of buyers in the sandbox environment. After creation buyers have the status of `PENDING`. In a production environment finmid runs certain checks before a buyer is actually set `ACTIVE`. However, in the sandbox environment finmid does not run any checks nor sets the created buyer `ACTIVE` automatically.
+
+
+        Use this API to onboard created buyers by setting their `status` to `ACTIVE`. Don''t forget to set their `expense_limit` to a value greater `0` (e.g. `10000`) as well. You can also simulate other flows as well. For example setting the status to `REJECTED` to simulate rejection of a buyer.
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - buyer_id
+              properties:
+                buyer_id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                  - description: ID of the buyer.
+                    example: buyer-123
+                status:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1list/get/parameters/0/schema/items'
+                  - description: New simulated status of the buyer.
+                    example: ACTIVE
+                expense_limit:
+                  type: number
+                  description: New simulated expense limit of the buyer.
+                  minimum: 0
+        required: true
+      responses:
+        '200':
+          description: Buyer updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers~1{id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v2/b2b-payments/simulation/payment-requests/repayment:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-payment-request-repayment-v2
+      summary: Simulate Repayment
+      description: 'This endpoint simulates repayment of a payment request. The payment request status must be `PENDING_REPAYMENT`.
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - payment_request_id
+              properties:
+                payment_request_id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+      responses:
+        '200':
+          description: Payment request repayment successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests/post/responses/200/content/application~1json/schema'
+        '400':
+          description: The request is invalid and failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - payment_request_invalid
+                    description:
+                      example: Payment request payment-request-123 not found
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v2/b2b-payments/simulation/seller:
+    patch:
+      tags:
+      - Simulation
+      operationId: simulate-seller-v2
+      summary: Simulate Seller
+      description: 'This endpoint allows you to simulate onboarding of sellers in the sandbox environment. After creation sellers have the status of `PENDING`. In a production environment finmid runs certain checks before a seller is actually set `ACTIVE`. However, in the sandbox environment finmid does not run any checks nor sets the created seller `ACTIVE` automatically.
+
+
+        Use this API to onboard created sellers by setting their `status` to `ACTIVE`. You can also simulate other flows as well. For example setting the status to `REJECTED` to simulate rejection of a seller.
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - seller_id
+              properties:
+                seller_id:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1payment-requests~1{id}~1cancel/put/parameters/0/schema/allOf/0'
+                  - description: ID of the seller.
+                    example: seller-321
+                status:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1list/get/parameters/0/schema/items'
+                  - description: New simulated status of the seller.
+                    example: ACTIVE
+        required: true
+      responses:
+        '200':
+          description: Seller updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers/post/responses/200/content/application~1json/schema'
+        '401':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1sellers~1{id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v2~1b2b-payments~1buyers/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/batches/{batch_id}/payments:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-batch-payment
+      summary: Sales statements batch payment
+      description: '**Applicable only to finmid-funded integrations.** Simulates a bank transfer payment for a batch in the sandbox environment.
+
+
+        In a finmid-funded integration, after collecting funds from businesses, the platform sends the `repayment_amount` to finmid''s bank account via bank transfer. This simulation endpoint replicates that bank transfer in sandbox so you can test the full flow end-to-end.
+
+
+        > 📘 **Platform-funded integrations** use Report Funds Collection instead of a bank transfer.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: batch_id
+        in: path
+        description: Identifier of the Batch.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: batch-id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  allOf:
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                  - description: 'Amount of the batch repayment in EUR, positive number.
+
+                      To get the correct `amount` value refer to `repayment_amount` field value from GET/POST `/sales-statements/batches/{id}` API response.
+
+                      Requests without `amount` repay the Batch with the correct amount automatically.
+
+                      '
+                    minimum: 0.01
+                    maximum: 1000000
+            examples:
+              batch_payment:
+                value:
+                  amount: 1000
+      responses:
+        '200':
+          description: Batch has been paid successfully.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Batch has already been paid
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Batch has already been paid
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/businesses/{business_id}/accept-offers:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-accept-offers
+      summary: Offer acceptance
+      description: 'This API allows you to accept an active Offer on behalf of a Business.
+
+
+        While a Business representative would typically accept an Offer through the UI, this API enables you to bypass the UI flow for testing purposes.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: business_id
+        in: path
+        description: Identifier of a Business.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: business-id
+      - name: offer_id
+        in: query
+        description: 'Identifier of the specific Offer to accept. Optional - when omitted, the first available Offer is taken.
+
+          '
+        required: false
+        schema:
+          type: string
+          format: uuid
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Offer accepted successfully
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Business not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Business not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/businesses/{business_id}/capital-max-review:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-capital-max-review
+      summary: Capital Max review outcome
+      description: 'This endpoint simulates the end of the Capital Max review for a Business, with the outcome you choose.
+
+
+        It applies to a Business that has submitted a Capital Max request and whose review has started. The review is resolved immediately, and finmid sends the same webhooks and merchant emails as in the live environment (for example `capital_offer.created` when new offers replace the original ones).
+
+
+        Calling the endpoint again with the outcome the review already has returns `200` and changes nothing, so a request that timed out can be retried safely.
+
+
+        In the live environment, finmid''s risk team decides the outcome after reviewing the additional financial data the merchant shared.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: business_id
+        in: path
+        description: Identifier of a Business.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: business-id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - outcome
+              properties:
+                outcome:
+                  description: 'Outcome of the Capital Max review to simulate.
+
+
+                    - `BETTER_OFFERS`: new offers replace the original ones, each 1.5 times the original offer (amount, fee and, for fixed offers, the repayment amount). The Capital Max application becomes `APPROVED`.
+
+                    - `NO_IMPROVEMENT`: new offers with the same amounts as the original ones replace them. The Capital Max application becomes `APPROVED`.
+
+                    - `REJECTED`: the Capital Max application becomes `REJECTED`, and the Business has no offers.
+
+                    '
+                  type: string
+                  enum:
+                  - BETTER_OFFERS
+                  - NO_IMPROVEMENT
+                  - REJECTED
+                  example: BETTER_OFFERS
+            examples:
+              better_offers:
+                value:
+                  outcome: BETTER_OFFERS
+              no_improvement:
+                value:
+                  outcome: NO_IMPROVEMENT
+              rejected:
+                value:
+                  outcome: REJECTED
+      responses:
+        '200':
+          description: The Capital Max review has been resolved with the requested outcome.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Business 'business-id' has no Capital Max application in review
+              examples:
+                business_not_found:
+                  value:
+                    code: validation_error
+                    description: Business with id 'business-id' not found
+                no_capital_max_application_in_review:
+                  value:
+                    code: validation_error
+                    description: Business 'business-id' has no Capital Max application in review
+                review_not_started:
+                  value:
+                    code: validation_error
+                    description: The Capital Max review of business 'business-id' has not started yet, retry shortly
+                review_not_resolved:
+                  value:
+                    code: validation_error
+                    description: The Capital Max review of business 'business-id' could not be resolved
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/businesses/{business_id}/create-offers:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-create-offers
+      summary: Offer creation
+      description: 'While finmid creates Offers after conducting a risk assessment in the live environment, this API can be used to simulate the Offer creation process for testing purposes.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: business_id
+        in: path
+        description: Identifier of a Business.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: business-id
+      responses:
+        '200':
+          description: Offer is available for a Business
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Business not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Business not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/businesses/{business_id}/expire-offers:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-expire-offers
+      summary: Offer expiration
+      description: 'This API allows you to expire an active Offer, simulating the scenario where a Business does not accept the Offer within a specified time frame.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: business_id
+        in: path
+        description: Identifier of a Business.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: business-id
+      responses:
+        '200':
+          description: Offer expired successfully
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Business not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Business not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/credits:
+    post:
+      tags:
+      - Simulation
+      operationId: simulate-create-funding
+      summary: Funding creation
+      description: 'This endpoint creates a Business, generates an Offer (flexible or fixed repayments) based on the provided terms, and accepts it. This allows you to immediately begin sharing revenue information (Sales statements) for the Business to initiate payment.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                business_id:
+                  allOf:
+                  - description: Identifier of the Business to create. If omitted we will assign a random UUID.
+                    type: string
+                    example: business-id
+                  - $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+                limit:
+                  allOf:
+                  - description: Amount of the funding limit in EUR. If omitted we will automatically pick default 1000.00 EUR.
+                    type: number
+                    minimum: 0.01
+                    maximum: 100000
+                    example: 1000
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                repayment_percent:
+                  allOf:
+                  - description: Funding repayment percent (flexible repayments). If omitted we will automatically pick default 15.0000.
+                    type:
+                    - number
+                    - 'null'
+                    minimum: 0.0001
+                    maximum: 100
+                    example: 15
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                repayment_amount:
+                  allOf:
+                  - description: Funding repayment amount (fixed repayments). If omitted we will automatically pick default 200.00.
+                    type:
+                    - number
+                    - 'null'
+                    minimum: 0.01
+                    example: 200
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                platform_fee_percent:
+                  allOf:
+                  - description: Percent of the fee to be collected by the platform. If omitted we will automatically pick default 10.00.
+                    type: number
+                    minimum: 0
+                    maximum: 50
+                    example: 10
+                  - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/responses/200/content/application~1json/schema/allOf/0/properties/fee/allOf/1'
+                country:
+                  description: Country of the Business. If omitted we will automatically pick default DEU.
+                  $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}~1credits/get/responses/200/content/application~1json/schema/properties/data/items/properties/country/allOf/0'
+            examples:
+              create_default_funding:
+                value: {}
+              create_custom_funding:
+                value:
+                  business_id: business-id
+                  limit: 2000
+                  repayment_percent: 15
+                  repayment_amount: 200
+                  platform_fee_percent: 1
+                  country: DEU
+      responses:
+        '200':
+          description: Funding has been created successfully.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - type: object
+                  required:
+                  - id
+                  - fee
+                  - business_id
+                  - limit
+                  - platform_fee_percent
+                  - country
+                  properties:
+                    id:
+                      description: Unique identifier of the Funding.
+                      type: string
+                      format: uuid
+                    fee:
+                      allOf:
+                      - description: Amount of fee for this funding in EUR.
+                        type: number
+                      - description: The amount with up to 2 decimal places.
+                        type: number
+                        pattern: ^(?:\+|-)?[0-9]+(?:\.[0-9]+)$
+                        example: 1000
+                - $ref: '#/paths/~1api~1v1~1capital~1simulation~1credits/post/requestBody/content/application~1json/schema'
+              examples:
+                funding_created:
+                  value:
+                    id: 00000000-0000-0000-0000-000000000001
+                    business_id: business-id
+                    limit: 2000
+                    fee: 200
+                    repayment_percent: 15
+                    repayment_amount: 200
+                    country: DEU
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Business not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Business not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/credits/{credit_id}/payout:
+    post:
+      tags:
+      - Simulation
+      operationId: payout-credit
+      summary: Funding payout
+      description: 'This endpoint simulates updating the KYB information and marking the funding as paid out.
+
+
+        Endpoint can be used only for `PENDING` fundings without `paid_out_at` timestamp.
+
+
+        In the live environment, fundings are paid out once the Business successfully completes the KYB process.
+
+
+        For explicit control before payout, use `POST /api/v1/capital/simulation/fundings/applications/{application_id}/accept`.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: credit_id
+        in: path
+        description: Unique identifier of the funding.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: b3e3b3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e
+      responses:
+        '200':
+          description: Funding has been successfully paid out.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Funding not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Funding not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/credits/{credit_id}/reject:
+    post:
+      tags:
+      - Simulation
+      operationId: reject-credit
+      summary: Funding rejection
+      description: 'This endpoint simulates updating the KYB information with rejection details and marking the funding as rejected.
+
+
+        Endpoint can be used only for `PENDING` fundings without `paid_out_at` timestamp.
+
+
+        In the live environment, fundings can be rejected when the Business fails the KYB process or does not meet the underwriting criteria.
+
+
+        For explicit control before payout, use `POST /api/v1/capital/simulation/fundings/applications/{application_id}/reject`.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: credit_id
+        in: path
+        description: Unique identifier of the funding.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: b3e3b3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e
+      responses:
+        '200':
+          description: Funding has been successfully rejected.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Funding not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Funding not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/fundings/applications/{application_id}/accept:
+    post:
+      tags:
+      - Simulation
+      operationId: accept-funding-application
+      summary: Funding Application acceptance
+      description: 'This endpoint simulates successful completion of the KYB process for the Funding Application. The application is approved and the Funding is created and paid out.
+
+
+        In the live environment, this happens once the Business successfully completes the KYB process.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: application_id
+        in: path
+        description: Unique identifier of the Funding Application.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: b3e3b3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e
+      responses:
+        '200':
+          description: Funding Application has been successfully accepted.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Funding Application not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Funding Application not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/fundings/applications/{application_id}/cancel:
+    post:
+      tags:
+      - Simulation
+      operationId: cancel-funding-application
+      summary: Funding Application cancellation
+      description: 'This endpoint simulates cancellation of the Funding Application (e.g. on business request). Any running KYB process is stopped.
+
+
+        In the live environment, this happens when the application process is stopped before a decision is reached.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: application_id
+        in: path
+        description: Unique identifier of the Funding Application.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: b3e3b3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e
+      responses:
+        '200':
+          description: Funding Application has been successfully cancelled.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Funding Application not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Funding Application not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/fundings/applications/{application_id}/reject:
+    post:
+      tags:
+      - Simulation
+      operationId: reject-funding-application
+      summary: Funding Application rejection
+      description: 'This endpoint simulates the KYB process failing for the Funding Application. The application is rejected and no Funding is created.
+
+
+        In the live environment, this happens when the Business fails the KYB process or does not meet the underwriting criteria.
+
+
+        The simulated rejection reasons are not reflected on the Funding Application read endpoint.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: application_id
+        in: path
+        description: Unique identifier of the Funding Application.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: b3e3b3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejection_reasons:
+                  description: Reasons the Funding Application is rejected. Defaults to `RISK_REQUIREMENTS_NOT_MET` when omitted.
+                  type: array
+                  items:
+                    description: "Reason why the Funding Application was rejected. One application can have multiple rejection reasons. \n\n- `INSUFFICIENT_BUSINESS_AGE`: the business has been registered for less than 12 months.\n- `NEGATIVE_FINANCIAL_PERFORMANCE`: recent financial indicators do not meet eligibility criteria.\n- `OWNERSHIP_CHANGED`: a recent ownership change does not yet meet eligibility criteria.\n- `COMPANY_STATUS_NOT_ALLOWED`: the business' legal structure is not eligible.\n- `RED_FLAG_TRANSACTIONS`: bank account activity does not meet risk requirements.\n- `NEGATIVE_LEGAL_EVENT`: a recent legal event breaches risk requirements.\n- `RISK_REQUIREMENTS_NOT_MET`: information found does not meet risk requirements. Generic blanket — used when specific underlying reason is intentionally hidden.\n- `INSUFFICIENT_DATA`: available data is insufficient to complete the assessment.\n- `ENTITY_UNIDENTIFIABLE`: the business could not be identified — required documentation was not received.\n- `MERCHANT_UNRESPONSIVE`: the application was closed because requested information was not received in time.\n- `INELIGIBLE_INDUSTRY`: the business operates in an industry finmid does not finance.\n- `PLATFORM_CHECK_REJECTED`: the platform rejected the Funding Application through its own check (see [Report Platform Check](./report-platform-check)).\n"
+                    type: string
+                    enum:
+                    - INSUFFICIENT_BUSINESS_AGE
+                    - NEGATIVE_FINANCIAL_PERFORMANCE
+                    - OWNERSHIP_CHANGED
+                    - COMPANY_STATUS_NOT_ALLOWED
+                    - RED_FLAG_TRANSACTIONS
+                    - NEGATIVE_LEGAL_EVENT
+                    - RISK_REQUIREMENTS_NOT_MET
+                    - INSUFFICIENT_DATA
+                    - ENTITY_UNIDENTIFIABLE
+                    - MERCHANT_UNRESPONSIVE
+                    - INELIGIBLE_INDUSTRY
+                    - PLATFORM_CHECK_REJECTED
+                    example: RISK_REQUIREMENTS_NOT_MET
+            examples:
+              default_reason:
+                value: {}
+              custom_reasons:
+                value:
+                  rejection_reasons:
+                  - INSUFFICIENT_DATA
+                  - NEGATIVE_FINANCIAL_PERFORMANCE
+      responses:
+        '200':
+          description: Funding Application has been successfully rejected.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Funding Application not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Funding Application not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/payments/{payment_id}/complete:
+    post:
+      tags:
+      - Simulation
+      operationId: complete-payment
+      summary: Payment completion
+      description: 'In the live environment, payments are being completed once the Business bank account is debited and the payment amount is reconciled.
+
+
+        To simulate a similar event in the sandbox environment, and bring the Payment to `COMPLETED` state, you can use this endpoint.
+
+
+        Payment will be automatically scheduled, if it has not been yet.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: payment_id
+        in: path
+        description: Unique identifier of the payment.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: 25-08-abcde
+      responses:
+        '200':
+          description: Payment has been successfully completed.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Payment not found
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Payment not found
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/payments/{payment_id}/fail:
+    post:
+      tags:
+      - Simulation
+      operationId: fail-payment
+      summary: Payment failure
+      description: 'In the live environment, payments can fail when debit of Business bank account has failed, e.g. due to insufficient balance.
+
+
+        To simulate a similar event in the sandbox environment, and bring the Payment to `FAILED` state, you can use this endpoint.
+
+
+        Payment will be automatically scheduled, if it has not been yet.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: payment_id
+        in: path
+        description: Unique identifier of the payment.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: 25-08-abcde
+      responses:
+        '200':
+          description: Payment failure has been successfully simulated.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Payment has already been completed
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Payment has already been completed
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+  /api/v1/capital/simulation/payments/{payment_id}/schedule:
+    post:
+      tags:
+      - Simulation
+      operationId: schedule-payment
+      summary: Payment scheduling
+      description: 'In the live environment, payments are being scheduled automatically to be debited from the Business bank account, when their `scheduled_at` time comes.
+
+
+        To simulate a similar event in the sandbox environment, you can use this endpoint.
+
+
+        > 🚧
+
+        >
+
+        > **Only available in sandbox environment.**'
+      parameters:
+      - name: payment_id
+        in: path
+        description: Unique identifier of the payment.
+        required: true
+        schema:
+          $ref: '#/paths/~1api~1v1~1capital~1payment-batches~1{batch_id}/get/parameters/0/schema'
+        example: 25-08-abcde
+      responses:
+        '200':
+          description: Payment has been successfully scheduled.
+        '400':
+          description: The request is invalid or failed validation.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/paths/~1api~1v1~1transaction/post/responses/400/content/application~1json/schema/allOf/0'
+                - type: object
+                  properties:
+                    code:
+                      type: string
+                      enum:
+                      - validation_error
+                    description:
+                      example: Payment has already been scheduled
+              examples:
+                validation_error:
+                  value:
+                    code: validation_error
+                    description: Payment has already been scheduled
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+    servers:
+    - url: https://sandbox.finmid.com
+      description: Sandbox
+    - url: https://api.finmid.com
+      description: Live
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-refined-from:
+- finmid-b2b-payments-api-openapi.yml
+- finmid-capital-api-openapi.yml
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/cancel-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-buyer-v2.md
+  - https://docs.finmid.com/reference/create-payment-request-payout.md
+  - https://docs.finmid.com/reference/create-payment-request-v2.md
+  - https://docs.finmid.com/reference/create-seller-v2.md
+  - https://docs.finmid.com/reference/get-buyer-limit-v2.md
+  - https://docs.finmid.com/reference/get-buyer-v2.md
+  - https://docs.finmid.com/reference/get-buyers-for-platform.md
+  - https://docs.finmid.com/reference/get-payment-request-v2.md
+  - https://docs.finmid.com/reference/get-payment-requests-v2.md
+  - https://docs.finmid.com/reference/get-seller-v2.md
+  - https://docs.finmid.com/reference/get-sellers-for-platform.md
+  - https://docs.finmid.com/reference/get-tasks.md
+  - https://docs.finmid.com/reference/simulate-buyer-v2.md
+  - https://docs.finmid.com/reference/simulate-payment-request-repayment-v2.md
+  - https://docs.finmid.com/reference/simulate-seller-v2.md
+  - https://docs.finmid.com/reference/update-buyer-v2.md
+  - https://docs.finmid.com/reference/update-payment-request-v2.md
+  - https://docs.finmid.com/reference/update-seller-bank-account-v2.md
+  - https://docs.finmid.com/reference/update-seller-v2.md
+  - https://docs.finmid.com/reference/upload-payment-request-documents.md
+  merge:
+    pages: 21
+    deduped: 119
+    conflicts_kept_first: 0

@@ -1,0 +1,183 @@
+openapi: 3.2.0
+info:
+  title: CAPITAL Onboarding API
+  version: v1.0
+servers:
+- url: https://sandbox.finmid.com
+  description: Sandbox
+- url: https://api.finmid.com
+  description: Live
+security:
+- apiKeyScheme: []
+tags:
+- name: Onboarding
+paths:
+  /api/v1/capital/businesses/{business_id}/onboardings/latest:
+    get:
+      tags:
+      - Onboarding
+      operationId: get-latest-onboarding
+      summary: Get latest onboarding status
+      deprecated: true
+      description: 'This endpoint retrieves the latest onboarding status for a business.
+
+
+        The onboarding process collects information from the business to generate offers in cases when
+
+        platform doesn''t have enough data to create pre-approved offers.
+
+        This endpoint provides information about the current state of the onboarding process,
+
+        including submission and review timestamps, and rejection reasons if applicable.
+
+
+        The status transitions as follows:
+
+        - `AVAILABLE` → `IN_REVIEW` (when submitted)
+
+        - `IN_REVIEW` → `APPROVED` (when approved)
+
+        - `IN_REVIEW` → `REJECTED` (when rejected)'
+      parameters:
+      - $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/parameters/0'
+      responses:
+        '200':
+          description: Current onboarding status for the business
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - status
+                properties:
+                  status:
+                    type: string
+                    description: 'Current status of the business onboarding process.
+
+
+                      - `AVAILABLE`: Onboarding is available and can be started
+
+                      - `IN_REVIEW`: Onboarding has been submitted and is under review
+
+                      - `APPROVED`: Onboarding has been approved
+
+                      - `REJECTED`: Onboarding has been rejected
+
+                      '
+                    enum:
+                    - AVAILABLE
+                    - IN_REVIEW
+                    - APPROVED
+                    - REJECTED
+                    example: IN_REVIEW
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: Timestamp when the onboarding was submitted for review (ISO 8601 UTC)
+                    example: '2025-02-10T13:42:35.282908722Z'
+                  reviewed_at:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: Timestamp when the onboarding was reviewed (approved or rejected) (ISO 8601 UTC)
+                    example: '2025-02-11T13:42:35.282908722Z'
+                  rejection_reason:
+                    type:
+                    - string
+                    - 'null'
+                    description: Reason for rejection if status is REJECTED
+                    example: INSOLVENCY
+              examples:
+                available:
+                  value:
+                    status: AVAILABLE
+                    submitted_at: null
+                    reviewed_at: null
+                    rejection_reason: null
+                in_review:
+                  value:
+                    status: IN_REVIEW
+                    submitted_at: '2025-02-10T13:42:35.282908722Z'
+                    reviewed_at: null
+                    rejection_reason: null
+                approved:
+                  value:
+                    status: APPROVED
+                    submitted_at: '2025-02-10T13:42:35.282908722Z'
+                    reviewed_at: '2025-02-11T13:42:35.282908722Z'
+                    rejection_reason: null
+                rejected:
+                  value:
+                    status: REJECTED
+                    submitted_at: '2025-02-10T13:42:35.282908722Z'
+                    reviewed_at: '2025-02-11T13:42:35.282908722Z'
+                    rejection_reason: INSOLVENCY
+        '401':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/401'
+        '404':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses~1{business_id}/get/responses/404'
+        '500':
+          $ref: '#/paths/~1api~1v1~1capital~1businesses/post/responses/500'
+components:
+  securitySchemes:
+    apiKeyScheme:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+x-provenance:
+  method: searched
+  source: https://docs.finmid.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://docs.finmid.com/reference/accept-funding-application.md
+  - https://docs.finmid.com/reference/add-business-kyb-data.md
+  - https://docs.finmid.com/reference/add-sales-statements.md
+  - https://docs.finmid.com/reference/cancel-funding-application.md
+  - https://docs.finmid.com/reference/complete-payment.md
+  - https://docs.finmid.com/reference/create-business.md
+  - https://docs.finmid.com/reference/create-csp-document-upload.md
+  - https://docs.finmid.com/reference/create-kyb-business-document-upload.md
+  - https://docs.finmid.com/reference/create-signature-link.md
+  - https://docs.finmid.com/reference/delete-csp-document.md
+  - https://docs.finmid.com/reference/execute-payment-transaction.md
+  - https://docs.finmid.com/reference/fail-payment.md
+  - https://docs.finmid.com/reference/finalize-csp-document-submission.md
+  - https://docs.finmid.com/reference/get-active-offer-group.md
+  - https://docs.finmid.com/reference/get-business.md
+  - https://docs.finmid.com/reference/get-capital-max.md
+  - https://docs.finmid.com/reference/get-current-offer-state.md
+  - https://docs.finmid.com/reference/get-document-url.md
+  - https://docs.finmid.com/reference/get-funding-applications.md
+  - https://docs.finmid.com/reference/get-fundings-for-business.md
+  - https://docs.finmid.com/reference/get-latest-onboarding.md
+  - https://docs.finmid.com/reference/get-payment-batch.md
+  - https://docs.finmid.com/reference/get-payments-for-credit.md
+  - https://docs.finmid.com/reference/get-sales-statements.md
+  - https://docs.finmid.com/reference/list-csp-documents.md
+  - https://docs.finmid.com/reference/list-funding-documents.md
+  - https://docs.finmid.com/reference/payout-credit.md
+  - https://docs.finmid.com/reference/receive-incoming-webhook.md
+  - https://docs.finmid.com/reference/receive-payout-outcome.md
+  - https://docs.finmid.com/reference/reject-credit.md
+  - https://docs.finmid.com/reference/reject-funding-application.md
+  - https://docs.finmid.com/reference/report-funds-collection.md
+  - https://docs.finmid.com/reference/report-payment.md
+  - https://docs.finmid.com/reference/report-platform-check.md
+  - https://docs.finmid.com/reference/schedule-payment.md
+  - https://docs.finmid.com/reference/simulate-accept-offers.md
+  - https://docs.finmid.com/reference/simulate-batch-payment.md
+  - https://docs.finmid.com/reference/simulate-capital-max-review.md
+  - https://docs.finmid.com/reference/simulate-create-funding.md
+  - https://docs.finmid.com/reference/simulate-create-offers.md
+  - https://docs.finmid.com/reference/simulate-expire-offers.md
+  - https://docs.finmid.com/reference/submit-business-performance-data.md
+  - https://docs.finmid.com/reference/update-business-non-pi.md
+  merge:
+    pages: 43
+    deduped: 199
+    conflicts_kept_first: 0
